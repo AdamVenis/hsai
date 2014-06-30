@@ -7,18 +7,19 @@
 # http://hearthstonejson.com/
 
 # mechanics: Taunt, Stealth, Divine Shield, Windfury, Freeze, Enrage, HealTarget, Charge, Deathrattle, Aura, Combo, AdjacentBuff, Battlecry, Poisonous, Spellpower
-# event types: start_turn, end_turn, kill_minion, attack, summon 
+# implemented event types: start_turn, end_turn, kill_minion, attack, summon, deal_damage, heal, modify_stats
 
 from recordtype import recordtype
 from json import loads
 from random import shuffle, randint, choice
-from effects import effects
 from functools import partial
+import effects
+import decks
 
 Game = recordtype('Game', 'player enemy effect_pool event_queue minion_pool minion_counter')
 Player = recordtype('Player', 'hero hand deck board secrets crystals current_crystals armor weapon spellpower fatigue can_hp')
 Card = recordtype('Card', 'name cost attack health mechanics')
-Minion = recordtype('Minion', 'name attack health mechanics attacks_left minion_id owner')
+Minion = recordtype('Minion', 'name neutral_attack attack neutral_health max_health health mechanics attacks_left minion_id owner')
 Weapon = recordtype('Weapon', 'attack durability')
 
 def get_minions(): #for local temp variables
@@ -45,67 +46,57 @@ def get_card(card):
             rtn.mechanics = []
          return rtn
          
-def get_starter_deck():
-   deck_names = [ 'Chillwind Yeti', 
-                  'Boulderfist Ogre', 
-                  'Acidic Swamp Ooze', 
-                  'River Crocolisk', 
-                  'Wisp', 
-                  'Thrallmar Farseer', 
-                  'Windfury Harpy',
-                  'War Golem',
-                  'Bloodfen Raptor',
-                  'Oasis Snapjaw',
-                  'Bluegill Warrior',
-                  'Reckless Rocketeer',
-                  'Stormwind Knight',
-                  'Wolfrider',
-                  'Young Dragonhawk',
-                  'Stonetusk Boar',
-                  'Loot Hoarder',
-                  'Novice Engineer']
-   deck = map(get_card, deck_names)
+def get_deck(names):
+   deck = map(get_card, names)
    shuffle(deck) #LOL
    return deck
    
 def display(p1, p2):
-   b1 = [' '*9] # borders for board minions
-   b2 = [' '*9] 
-   a1 = [' '*9] # attributes for board minions
-   a2 = [' '*9]
-   for i in p1.board[1:]:
-      b1.append('-'*(len(i.name)+2))
-      a1.append('|' + str(i.attack) + ' '*(len(i.name) - len(str(i.attack)) - len(str(i.health))) + str(i.health) + '|')
 
-   for i in p2.board[1:]:
-      b2.append('-'*(len(i.name)+2))
-      a2.append('|' + str(i.attack) + ' '*(len(i.name) - len(str(i.attack)) - len(str(i.health))) + str(i.health) + '|')
+   p1_board_string = [[' '*9], 'P1 Board: %s' % ' '.join(map(lambda x:'|'+x.name+'|', p1.board[1:])), [' '*9]]
+   p2_board_string = [[' '*9], 'P2 Board: %s' % ' '.join(map(lambda x:'|'+x.name+'|', p2.board[1:])), [' '*9]]
+   
+   for i in p1.board[1:]:
+      p1_board_string[0].append('-'*(len(i.name)+2))
+      p1_board_string[2].append('|' + str(i.attack) + ' '*(len(i.name) - len(str(i.attack)) - len(str(i.health))) + str(i.health) + '|')
       
+   p1_board_string[0] = ' '.join(p1_board_string[0])
+   p1_board_string[2] = ' '.join(p1_board_string[2])
+   p1_board_string.append(p1_board_string[0])
+   
+   for i in p2.board[1:]:
+      p2_board_string[0].append('-'*(len(i.name)+2))
+      p2_board_string[2].append('|' + str(i.attack) + ' '*(len(i.name) - len(str(i.attack)) - len(str(i.health))) + str(i.health) + '|')
+      
+   p2_board_string[0] = ' '.join(p2_board_string[0])
+   p2_board_string[2] = ' '.join(p2_board_string[2])
+   p2_board_string.append(p2_board_string[0])   
+   
    print '-'*79
    print 'P2 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (p2.hero, p2.current_crystals, p2.crystals, p2.board[0].health, 
                                                 '' if p2.armor == 0 else ', Armor : ' + str(p2.armor),
                                                 '' if p2.weapon == None else ', Weapon : ' + str(p2.weapon.attack) + '/' + str(p2.weapon.durability),
                                                 '' if p2.board[0].attack == 0 else ', Attack : ' + str(p2.board[0].attack))
    print 'P2 Hand: %s' % ' | '.join(map(lambda x:x.name, p2.hand))
-   print ' '.join(b2)
-   print 'P2 Board: %s' % ' '.join(map(lambda x:'|'+x.name+'|', p2.board[1:])) #don't display the hero
-   print ' '.join(a2)
-   print ' '.join(b2)
-   print ' '.join(b1)
-   print 'P1 Board: %s' % ' '.join(map(lambda x:'|'+x.name+'|', p1.board[1:]))
-   print ' '.join(a1)
-   print ' '.join(b1)
+   for i in range(len(p2_board_string[0])/79 + 1):
+      for j in p2_board_string:
+         print j[i*79:(i+1)*79]
+   for i in range(len(p1_board_string[0])/79 + 1):
+      for j in p1_board_string:
+         print j[i*79:(i+1)*79]
    print 'P1 Hand: %s' % ' | '.join(map(lambda x:x.name, p1.hand))
    print 'P1 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (p1.hero, p1.current_crystals, p1.crystals, p1.board[0].health, 
                                                 '' if p1.armor == 0 else ', Armor : ' + str(p1.armor),
                                                 '' if p1.weapon == None else ', Weapon : ' + str(p1.weapon.attack) + '/' + str(p1.weapon.durability),
-                                                '' if p1.board[0].attack == 0 else ', Attack : ' + str(p1.board[0].attack))   
+                                                '' if p1.board[0].attack == 0 else ', Attack : ' + str(p1.board[0].attack))  
+                                                
 def draw(player):
    if not player.deck:
       print "We're out of cards!"
       player.fatigue += 1
       player.board[0].health -= player.fatigue
    elif len(player.hand) == 10:
+      print 'hand is full! %s is burned' % player.deck[0].name
       del player.deck[0]
    else:
       player.hand.append(player.deck[0])
@@ -124,7 +115,7 @@ def summon(game, player, ind=None, card=None): #ind is for summoning from hand, 
          player.current_crystals -= card.cost
          del player.hand[ind]
       
-   minion = Minion(card.name, card.attack, card.health, card.mechanics, 0, game.minion_counter, player)
+   minion = Minion(card.name, card.attack, card.attack, card.health, card.health, card.health, card.mechanics, 0, game.minion_counter, player)
    game.minion_pool[minion.minion_id] = minion
    game.minion_counter += 1
    player.board.append(minion)
@@ -133,28 +124,31 @@ def summon(game, player, ind=None, card=None): #ind is for summoning from hand, 
          minion.attacks_left = 2
       else:
          minion.attacks_left = 1
-   if effects.get(card.name):
-      game.effect_pool.append(partial(effects[card.name], id=minion.minion_id))
+   if effects.effects.get(card.name):
+      game.effect_pool.append(partial(effects.effects[card.name], id=minion.minion_id))
       
    if ind:
       trigger_effects(game, ['battlecry', minion.minion_id])
       
-def attack(game, x, y):
+def attack(game, x, y): #x and y are the indices of the ally and enemy minions respectively
    if x not in range(len(game.player.board)) or y not in range(len(game.enemy.board)):
       print 'Bad index!'
    elif game.player.board[x].attacks_left == 0:
       print 'This minion has already attacked!'
+   elif 'Stealth' in game.enemy.board[y].mechanics:
+      print 'cannot target stealth minions!'
+   elif 'Taunt' not in game.enemy.board[y].mechanics and any(map(lambda t:'Taunt' in t.mechanics, game.enemy.board)):
+      print 'must attack taunting minions'
    elif x == 0: #hero attacking behaviour
       if game.player.weapon:
-         game.player.board[x].attacks_left -= 1
+         game.player.board[0].attacks_left -= 1
          deal_damage(game, game.enemy, y, game.player.weapon.attack)
          deal_damage(game, game.player, x, game.enemy.board[y].attack)
          game.player.weapon.durability -= 1 # this will need to be an event for gorehowl
          if game.player.weapon.durability == 0:
-            print 'weapon is gone!'
             game.player.weapon = None
       elif game.player.board[0].attack:
-         game.player.board[x].attacks_left -= 1
+         game.player.board[0].attacks_left -= 1
          deal_damage(game, game.enemy, y, game.player.board[0].attack)
          deal_damage(game, game.player, x, game.enemy.board[y].attack)
       else:
@@ -162,16 +156,21 @@ def attack(game, x, y):
    elif game.player.board[x].attack <= 0:
       print 'This minion cannot attack!'
    else:
-      game.player.board[x].attacks_left -= 1
+      game.player.board[x].attacks_left -= 1      
+      if 'Stealth' in game.player.board[x].mechanics:
+         game.player.board[x].mechanics.remove('Stealth')
       deal_damage(game, game.player, x, game.enemy.board[y].attack)
       deal_damage(game, game.enemy, y, game.player.board[x].attack)
          
 def deal_damage(game, player, ind, damage):
+   trigger_effects(game, ['deal_damage', player.board[ind].minion_id, damage])
    if ind == 0 and damage < player.armor:
       player.armor -= damage
    elif ind == 0 and player.armor:
       player.board[ind].health -= damage - player.armor
       player.armor = 0
+   elif 'Divine Shield' in player.board[ind].mechanics:
+      player.board[ind].mechanics.remove('Divine Shield')
    else:
       player.board[ind].health -= damage
       
@@ -180,6 +179,11 @@ def deal_damage(game, player, ind, damage):
          trigger_effects(game, ['kill_hero', player])
       else:
          game.event_queue.append((kill_minion, (game, player, ind)))
+         
+def heal(game, minion_id, amount):
+   trigger_effects(game, ['heal', minion_id, amount])
+   minion = game.minion_pool[minion_id]
+   minion.health = min(minion.health + amount, minion.max_health)
       
 def kill_minion(game, player, ind):
    trigger_effects(game, ['kill_minion', player.board[ind].minion_id])
@@ -228,13 +232,21 @@ def hero_power(g):
    elif h == 'druid':
       g.player.armor += 1
       g.player.board[0].attack += 1
-      g.effect_pool.append(effects['Druid'])
+      g.effect_pool.append(effects.effects['Druid'])
    g.player.can_hp = False
    g.player.current_crystals -= 2
    
-def dummy_minion():
-   return Minion(name='dummy', attack=0, health=30, mechanics=[], attacks_left=0, minion_id=None, owner=None)
-      
+def dummy_minion(game):
+   #game.minion_counter += 1
+   return Minion(name='dummy', neutral_attack=0, attack=0, neutral_health=30, max_health=30, health=30, 
+                  mechanics=[], attacks_left=0, minion_id=game.minion_counter-1, owner=None)
+   
+def opponent(game, player):
+   if player == game.player:
+      return game.enemy
+   else:
+      return game.player
+   
 def play():
    print choice(['Take a seat by the hearth!', 'Welcome back!', "Busy night! But there's always room for another!"])
       
@@ -244,7 +256,7 @@ def play():
       while hero.lower() not in ['warrior', 'hunter', 'mage', 'warlock', 'shaman', 'rogue', 'priest', 'paladin', 'druid']:
          print 'not a valid hero! choose again'
          hero = raw_input()   
-      player = Player(hero, [], get_starter_deck(), [dummy_minion()], [], 0, 0, 0, None, 0, 0, True)
+      player = Player(hero, [], get_deck(decks.starter), [], [], 0, 0, 0, None, 0, 0, True)
       if i == 0:
          p1 = player
       else:
@@ -258,9 +270,12 @@ def play():
       
    game = Game(p2, p1, [], [], {}, 1547657) # pre-switched
    
+   for p in [p1, p2]:
+      p.board.append(dummy_minion(game))
+   
    while True: #loops through turns
-      p, enemy = game.enemy, game.player
-      game.player, game.enemy = p, enemy
+      game.enemy, game.player = game.player, game.enemy
+      p, enemy = game.player, game.enemy
       p.crystals = min(p.crystals + 1, 10)
       p.current_crystals = p.crystals
       draw(p)
@@ -274,9 +289,10 @@ def play():
          else:
             minion.attacks_left = 1
       p.can_hp = True
+      
+      trigger_effects(game, ['start_turn', p])
          
       while True: #loops through actions
-      
          if game.event_queue: #performs any outstanding event
             event = game.event_queue.pop()
             event[0](*event[1]) # tuple with arguments in second slot
@@ -291,7 +307,7 @@ def play():
          if len(action) < 1:
             print 'unable to parse action'
          elif action[0].lower() in ['end', 'end turn']:
-            trigger_effects(game, ['end_turn'])
+            trigger_effects(game, ['end_turn', p])
             break
          elif action[0].lower() == 'hero' and action[1].lower() == 'power':
             hero_power(game)
@@ -311,6 +327,9 @@ def play():
                   attack(game, int(action[1]), int(action[2]))
                except ValueError:
                   print 'invalid input: parameters must be integers, was given strings'
+         elif action[0].lower() == 'debug':
+            print 'effects: %s' % map(lambda x: '%s:%s' % (x.func.__name__, x.keywords), game.effect_pool)
+            print 'events: %s' % game.event_queue
          else:
             print 'unrecognized action'
       
