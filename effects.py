@@ -1,3 +1,4 @@
+#alphabetical order!
 import Hearthstone
 
 effects = {}
@@ -10,7 +11,7 @@ def acolyte_of_pain(game, trigger, id):
    return False
 effects['Acolyte of Pain'] = acolyte_of_pain
 
-def amani_berserker(game, trigger, id): # this is probably wrong on conjunction with Auchenai Soulpriest
+'''def amani_berserker(game, trigger, id): # this is probably wrong on conjunction with Auchenai Soulpriest
    minion = game.minion_pool[id]
    if trigger[0] == 'deal_damage' and trigger[1] == id:
       minion.attack += 3
@@ -19,7 +20,7 @@ def amani_berserker(game, trigger, id): # this is probably wrong on conjunction 
    elif trigger[0] == 'kill_minion' and trigger[1] == id:
       return True
    return False
-effects['Amani Berserker'] = amani_berserker
+effects['Amani Berserker'] = amani_berserker''' #work in progress
 
 def arcane_golem(game, trigger, id):
    if trigger[0] == 'battlecry' and trigger[1] == id:
@@ -50,6 +51,14 @@ def druid(game, trigger, player): # hero power
    return False
 effects['Druid'] = druid
 
+def earthen_ring_farseer(game, trigger, id):
+   if trigger[0] == 'battlecry' and trigger[1] == id:
+      target_id = Hearthstone.target(game)
+      Hearthstone.heal(game, target_id, 3)
+      return True
+   return False
+effects['Earthen Ring Farseer'] = earthen_ring_farseer
+
 def gnomish_inventor(game, trigger, id):
    if trigger[0] == 'battlecry' and trigger[1] == id:
       Hearthstone.draw(game.player)
@@ -75,7 +84,7 @@ effects['Healing Totem'] = healing_totem
 
 def leper_gnome(game, trigger, id):
    if trigger[0] == 'kill_minion' and trigger[1] == id:
-      Hearthstone.deal_damage(game, Hearthstone.opponent(game, game.minion_pool[id].owner), 0, 2)
+      Hearthstone.deal_damage(game, Hearthstone.opponent(game, game.minion_pool[id].owner).board[0], 2)
       return True
    return False
 effects['Leper Gnome'] = leper_gnome

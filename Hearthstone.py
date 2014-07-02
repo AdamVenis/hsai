@@ -127,68 +127,105 @@ def summon(game, player, ind=None, card=None): #ind is for summoning from hand, 
    if effects.effects.get(card.name):
       game.effect_pool.append(partial(effects.effects[card.name], id=minion.minion_id))
       
-   if ind:
+   if ind != None:
       trigger_effects(game, ['battlecry', minion.minion_id])
       
 def attack(game, x, y): #x and y are the indices of the ally and enemy minions respectively
    if x not in range(len(game.player.board)) or y not in range(len(game.enemy.board)):
       print 'Bad index!'
-   elif game.player.board[x].attacks_left == 0:
+      return
+      
+   ally_minion = game.player.board[x]
+   enemy_minion = game.enemy.board[y]
+   
+   if ally_minion.attacks_left == 0:
       print 'This minion has already attacked!'
-   elif 'Stealth' in game.enemy.board[y].mechanics:
+      return
+   elif 'Stealth' in enemy_minion.mechanics:
       print 'cannot target stealth minions!'
-   elif 'Taunt' not in game.enemy.board[y].mechanics and any(map(lambda t:'Taunt' in t.mechanics, game.enemy.board)):
+      return
+   elif 'Taunt' not in enemy_minion.mechanics and any(map(lambda t:'Taunt' in t.mechanics, game.enemy.board)):
       print 'must attack taunting minions'
-   elif x == 0: #hero attacking behaviour
+      return
+      
+   if x == 0: #hero attacking behaviour
       if game.player.weapon:
-         game.player.board[0].attacks_left -= 1
-         deal_damage(game, game.enemy, y, game.player.weapon.attack)
-         deal_damage(game, game.player, x, game.enemy.board[y].attack)
+         ally_minion.attacks_left -= 1
+         deal_damage(game, enemy_minion.minion_id, game.player.weapon.attack)
+         deal_damage(game, ally_minion.minion_id, enemy_minion.attack)
          game.player.weapon.durability -= 1 # this will need to be an event for gorehowl
          if game.player.weapon.durability == 0:
             game.player.weapon = None
-      elif game.player.board[0].attack:
-         game.player.board[0].attacks_left -= 1
-         deal_damage(game, game.enemy, y, game.player.board[0].attack)
-         deal_damage(game, game.player, x, game.enemy.board[y].attack)
+      elif ally_minion.attack:
+         ally_minion.attacks_left -= 1
+         deal_damage(game, enemy_minion.minion_id, ally_minion.attack)
+         deal_damage(game, ally_minion.minion_id, enemy_minion.attack)
       else:
          print 'hero cannot attack!'
-   elif game.player.board[x].attack <= 0:
+   elif ally_minion.attack <= 0:
       print 'This minion cannot attack!'
    else:
-      game.player.board[x].attacks_left -= 1      
-      if 'Stealth' in game.player.board[x].mechanics:
-         game.player.board[x].mechanics.remove('Stealth')
-      deal_damage(game, game.player, x, game.enemy.board[y].attack)
-      deal_damage(game, game.enemy, y, game.player.board[x].attack)
+      ally_minion.attacks_left -= 1      
+      if 'Stealth' in ally_minion.mechanics:
+         ally_minion.mechanics.remove('Stealth')
+      deal_damage(game, ally_minion.minion_id, enemy_minion.attack)
+      deal_damage(game, enemy_minion.minion_id, ally_minion.attack)
          
-def deal_damage(game, player, ind, damage):
-   trigger_effects(game, ['deal_damage', player.board[ind].minion_id, damage])
-   if ind == 0 and damage < player.armor:
+def deal_damage(game, id, damage):
+   trigger_effects(game, ['deal_damage', id, damage])
+   minion = game.minion_pool[id]
+   player = minion.owner
+   if minion.name == 'hero' and damage < player.armor:
       player.armor -= damage
-   elif ind == 0 and player.armor:
-      player.board[ind].health -= damage - player.armor
+   elif game.minion_pool[id].name == 'hero' and player.armor:
+      minion.health -= damage - player.armor
       player.armor = 0
-   elif 'Divine Shield' in player.board[ind].mechanics:
-      player.board[ind].mechanics.remove('Divine Shield')
+   elif 'Divine Shield' in minion.mechanics:
+      minion.mechanics.remove('Divine Shield')
    else:
-      player.board[ind].health -= damage
+      minion.health -= damage
       
-   if player.board[ind].health <= 0:
-      if ind == 0:
+   if minion.health <= 0:
+      if minion.name == 'hero':
          trigger_effects(game, ['kill_hero', player])
       else:
-         game.event_queue.append((kill_minion, (game, player, ind)))
+         game.event_queue.append((kill_minion, (game, id)))
          
 def heal(game, minion_id, amount):
    trigger_effects(game, ['heal', minion_id, amount])
    minion = game.minion_pool[minion_id]
    minion.health = min(minion.health + amount, minion.max_health)
       
-def kill_minion(game, player, ind):
-   trigger_effects(game, ['kill_minion', player.board[ind].minion_id])
-   del game.minion_pool[player.board[ind].minion_id]
-   del player.board[ind]   
+def kill_minion(game, id):
+   minion = game.minion_pool[id]
+   trigger_effects(game, ['kill_minion', id])
+   minion.owner.board.remove(minion)
+   del game.minion_pool[id]
+   
+def target(game):
+   print 'pick a target'
+   while True:
+      input = raw_input().split(' ')
+      if len(input) != 2:
+         print 'wrong number of parameters'
+      elif input[0] in ['a', 'ally']:
+         try:
+            if int(input[1]) in range(len(game.player.board)):
+               return game.player.board[int(input[1])].minion_id
+            else:
+               print 'wrong index'
+         except ValueError:
+            print 'invalid parameter: must be integer'
+      elif input[0] in ['e', 'enemy']:
+         try:
+            if int(input[1]) in range(len(game.enemy.board)):
+               return game.enemy.board[int(input[1])].minion_id
+            else:
+               print 'wrong index'
+         except ValueError:
+            print 'invalid parameter: must be integer'         
+      else:
+         print 'invalid input. e.g. enemy 0'   
    
 def trigger_effects(game, trigger):
    for i in reversed(range(len(game.effect_pool))): # looping backwards to accomodate multiple deletions
@@ -219,14 +256,16 @@ def hero_power(g):
          print 'all totems have already been summoned!'
          return
    elif h == 'mage':
-      pass
+      id = target(g)
+      deal_damage(g, id, 1)
    elif h == 'warlock':
       deal_damage(g, g.player, 0, 2)
       draw(g.player)
    elif h == 'rogue':
       g.player.weapon = Weapon(1,2)
    elif h == 'priest':
-      pass
+      id = target(g)
+      heal(g, id, 2)
    elif h == 'paladin':
       summon(g, g.player, card=get_card('Silver Hand Recruit'))
    elif h == 'druid':
@@ -236,10 +275,12 @@ def hero_power(g):
    g.player.can_hp = False
    g.player.current_crystals -= 2
    
-def dummy_minion(game):
-   #game.minion_counter += 1
-   return Minion(name='dummy', neutral_attack=0, attack=0, neutral_health=30, max_health=30, health=30, 
-                  mechanics=[], attacks_left=0, minion_id=game.minion_counter-1, owner=None)
+def dummy_minion(game, player):
+   minion = Minion(name='hero', neutral_attack=0, attack=0, neutral_health=30, max_health=30, health=30, 
+                  mechanics=[], attacks_left=0, minion_id=game.minion_counter, owner=player)
+   game.minion_counter += 1
+   game.minion_pool[minion.minion_id] = minion
+   return minion
    
 def opponent(game, player):
    if player == game.player:
@@ -271,7 +312,7 @@ def play():
    game = Game(p2, p1, [], [], {}, 1547657) # pre-switched
    
    for p in [p1, p2]:
-      p.board.append(dummy_minion(game))
+      p.board.append(dummy_minion(game, p))
    
    while True: #loops through turns
       game.enemy, game.player = game.player, game.enemy
