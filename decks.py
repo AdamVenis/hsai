@@ -1,1 +1,7 @@
+import effects
+
 starter = ['Leper Gnome', 'Leper Gnome', 'Novice Engineer', 'Novice Engineer', 'Loot Hoarder', 'Loot Hoarder', 'River Crocolisk', 'River Crocolisk', 'Ironfur Grizzly', 'Ironfur Grizzly', 'Wolfrider', 'Wolfrider', 'Harvest Golem', 'Harvest Golem', 'Earthen Ring Farseer', 'Earthen Ring Farseer', 'Chillwind Yeti', 'Chillwind Yeti', 'Gnomish Inventor', 'Gnomish Inventor', "Sen'jin Shieldmasta", "Sen'jin Shieldmasta", 'Boulderfist Ogre', 'Boulderfist Ogre']
+
+effect_testing = effects.effects.keys() # one of each minion with effects, without the non-minion effects
+effect_testing.remove('Druid')
+effect_testing.remove('Healing Totem')

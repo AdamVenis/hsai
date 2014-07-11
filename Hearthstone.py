@@ -102,18 +102,17 @@ def draw(player):
       player.hand.append(player.deck[0])
       del player.deck[0]
       
-def summon(game, player, ind=None, card=None): #ind is for summoning from hand, card is used otherwise
-   if not card:
-      if ind >= len(player.hand):
-         print 'Bad index!'
-         return
-      elif player.hand[ind].cost > player.current_crystals:
-         print 'Not enough crystals! You need %s crystals for this.' % player.hand[ind].cost
-         return
-      else:
-         card = player.hand[ind]
-         player.current_crystals -= card.cost
-         del player.hand[ind]
+def summon(game, player, ind): #specifically for summoning from hand
+   if ind >= len(player.hand):
+      print 'Bad index!'
+      return
+   elif player.hand[ind].cost > player.current_crystals:
+      print 'Not enough crystals! You need %s crystals for this.' % player.hand[ind].cost
+      return
+   else:
+      card = player.hand[ind]
+      player.current_crystals -= card.cost
+      del player.hand[ind]
       
    minion = Minion(card.name, card.attack, card.attack, card.health, card.health, card.health, card.mechanics, 0, game.minion_counter, player)
    game.minion_pool[minion.minion_id] = minion
@@ -127,9 +126,22 @@ def summon(game, player, ind=None, card=None): #ind is for summoning from hand, 
    if effects.effects.get(card.name):
       game.effect_pool.append(partial(effects.effects[card.name], id=minion.minion_id))
       
-   if ind != None:
-      trigger_effects(game, ['battlecry', minion.minion_id])
+   trigger_effects(game, ['battlecry', minion.minion_id])
       
+def spawn(game, player, card): #equivalent of summon when not from hand
+   print 'spawning %s' % card.name
+   minion = Minion(card.name, card.attack, card.attack, card.health, card.health, card.health, card.mechanics, 0, game.minion_counter, player)
+   game.minion_pool[minion.minion_id] = minion
+   game.minion_counter += 1
+   player.board.append(minion)
+   if 'Charge' in minion.mechanics:
+      if 'Windfury' in minion.mechanics:
+         minion.attacks_left = 2
+      else:
+         minion.attacks_left = 1
+   if effects.effects.get(card.name):
+      game.effect_pool.append(partial(effects.effects[card.name], id=minion.minion_id))
+        
 def attack(game, x, y): #x and y are the indices of the ally and enemy minions respectively
    if x not in range(len(game.player.board)) or y not in range(len(game.enemy.board)):
       print 'Bad index!'
@@ -147,32 +159,26 @@ def attack(game, x, y): #x and y are the indices of the ally and enemy minions r
    elif 'Taunt' not in enemy_minion.mechanics and any(map(lambda t:'Taunt' in t.mechanics, game.enemy.board)):
       print 'must attack taunting minions'
       return
+            
+   damage = 0
+   if x == 0 and game.player.weapon:
+      damage += game.player.weapon.attack
+      game.player.weapon.durability -= 1 # this might need to be an event for gorehowl
+      if game.player.weapon.durability == 0:
+         game.player.weapon = None
+   if ally_minion.attack:
+      damage += ally_minion.attack
       
-   if x == 0: #hero attacking behaviour
-      if game.player.weapon:
-         ally_minion.attacks_left -= 1
-         deal_damage(game, enemy_minion.minion_id, game.player.weapon.attack)
-         deal_damage(game, ally_minion.minion_id, enemy_minion.attack)
-         game.player.weapon.durability -= 1 # this will need to be an event for gorehowl
-         if game.player.weapon.durability == 0:
-            game.player.weapon = None
-      elif ally_minion.attack:
-         ally_minion.attacks_left -= 1
-         deal_damage(game, enemy_minion.minion_id, ally_minion.attack)
-         deal_damage(game, ally_minion.minion_id, enemy_minion.attack)
-      else:
-         print 'hero cannot attack!'
-   elif ally_minion.attack <= 0:
-      print 'This minion cannot attack!'
-   else:
-      ally_minion.attacks_left -= 1      
+   if damage == 0:
+      print 'this target cannot attack!'
+   else:    
       if 'Stealth' in ally_minion.mechanics:
          ally_minion.mechanics.remove('Stealth')
-      deal_damage(game, ally_minion.minion_id, enemy_minion.attack)
-      deal_damage(game, enemy_minion.minion_id, ally_minion.attack)
-         
+      ally_minion.attacks_left -= 1
+      game.event_queue.append((deal_damage, (game, enemy_minion.minion_id, damage)))
+      game.event_queue.append((deal_damage, (game, ally_minion.minion_id, enemy_minion.attack)))
+   
 def deal_damage(game, id, damage):
-   trigger_effects(game, ['deal_damage', id, damage])
    minion = game.minion_pool[id]
    player = minion.owner
    if minion.name == 'hero' and damage < player.armor:
@@ -192,13 +198,12 @@ def deal_damage(game, id, damage):
          game.event_queue.append((kill_minion, (game, id)))
          
 def heal(game, minion_id, amount):
-   trigger_effects(game, ['heal', minion_id, amount])
    minion = game.minion_pool[minion_id]
    minion.health = min(minion.health + amount, minion.max_health)
       
 def kill_minion(game, id):
    minion = game.minion_pool[id]
-   trigger_effects(game, ['kill_minion', id])
+   game.effect_pool = filter(lambda x: x.keywords.get('id') != id, game.effect_pool) #remove relevant effects
    minion.owner.board.remove(minion)
    del game.minion_pool[id]
    
@@ -228,52 +233,50 @@ def target(game):
          print 'invalid input. e.g. enemy 0'   
    
 def trigger_effects(game, trigger):
-   for i in reversed(range(len(game.effect_pool))): # looping backwards to accomodate multiple deletions
-      if game.effect_pool[i](game, trigger): # returning true means the effect should be removed
-         del game.effect_pool[i]
-   
-def hero_power(g):
-   if g.player.current_crystals < 2:
+   game.effect_pool = filter(lambda x:not x(game, trigger), game.effect_pool)
+         
+def hero_power(game):
+   if game.player.current_crystals < 2:
       print 'not enough mana!'
       return
-   elif not g.player.can_hp:
+   elif not game.player.can_hp:
       print 'can only use this once per turn!'
       return
    
-   h = g.player.hero.lower()
+   h = game.player.hero.lower()
    if h == 'hunter':
-      deal_damage(g, g.enemy, 0, 2)
+      game.event_queue.append((deal_damage, (game, game.enemy.board[0].minion_id, 2)))
    elif h == 'warrior':
-      g.player.armor += 2
+      game.player.armor += 2
    elif h == 'shaman':
       totems = ['Healing Totem', 'Searing Totem', 'Stoneclaw Totem', 'Wrath of Air Totem']
-      for i in g.player.board:
+      for i in game.player.board:
          if i.name in totems:
             totems.remove(i.name)
       if totems: # not all have been removed
-         summon(g, g.player, card=get_card(choice(totems)))      
+         game.event_queue.append((spawn, (game, game.player, get_card(choice(totems)))))
       else:
          print 'all totems have already been summoned!'
          return
    elif h == 'mage':
-      id = target(g)
-      deal_damage(g, id, 1)
+      id = target(game)
+      game.event_queue.append((deal_damage, (game, id, 1)))
    elif h == 'warlock':
-      deal_damage(g, g.player, 0, 2)
-      draw(g.player)
+      game.event_queue.append((deal_damage, (game, game.player, 0, 2)))
+      draw(game.player)
    elif h == 'rogue':
-      g.player.weapon = Weapon(1,2)
+      game.player.weapon = Weapon(1,2)
    elif h == 'priest':
-      id = target(g)
-      heal(g, id, 2)
+      id = target(game)
+      game.event_queue.append((heal, (game, id, 2)))
    elif h == 'paladin':
-      summon(g, g.player, card=get_card('Silver Hand Recruit'))
+      game.event_queue.append((summon, (game, game.player, get_card('Silver Hand Recruit'))))
    elif h == 'druid':
-      g.player.armor += 1
-      g.player.board[0].attack += 1
-      g.effect_pool.append(effects.effects['Druid'])
-   g.player.can_hp = False
-   g.player.current_crystals -= 2
+      game.player.armor += 1
+      game.player.board[0].attack += 1
+      game.effect_pool.append(effects.effects['Druid'])
+   game.player.can_hp = False
+   game.player.current_crystals -= 2
    
 def dummy_minion(game, player):
    minion = Minion(name='hero', neutral_attack=0, attack=0, neutral_health=30, max_health=30, health=30, 
@@ -305,11 +308,11 @@ def play():
 
    print '%s versus %s!' % (p1.hero, p2.hero)
    
-   for i in range(2): # initial hand size
+   for i in range(3): # initial hand size
       draw(p1)
       draw(p2)
       
-   game = Game(p2, p1, [], [], {}, 1547657) # pre-switched
+   game = Game(p2, p1, [], [], {}, 1000) # pre-switched
    
    for p in [p1, p2]:
       p.board.append(dummy_minion(game, p))
@@ -321,12 +324,14 @@ def play():
       p.current_crystals = p.crystals
       draw(p)
       
-      print " "
-      print "It is now player %d's turn" % (1 if p == p1 else 2)
+      print " \nIt is now player %d's turn" % (1 if p == p1 else 2)
            
       for minion in p.board:
          if 'Windfury' in minion.mechanics:
             minion.attacks_left = 2
+         elif 'Frozen' in minion.mechanics:
+            minion.attacks_left = 0
+            minion.mechanics.remove('Frozen')
          else:
             minion.attacks_left = 1
       p.can_hp = True
@@ -335,7 +340,9 @@ def play():
          
       while True: #loops through actions
          if game.event_queue: #performs any outstanding event
-            event = game.event_queue.pop()
+            event = game.event_queue[0]
+            game.event_queue = game.event_queue[1:] # remove the first element. TODO: turn this into a deque?
+            trigger_effects(game, [event[0].__name__] + list(event[1][1:]))
             event[0](*event[1]) # tuple with arguments in second slot
             continue
             
@@ -357,7 +364,7 @@ def play():
                print 'incorrect number of arguments'
             else: 
                try:
-                  summon(game, p, int(action[1]))
+                  game.event_queue.append((summon, (game, p, int(action[1]))))
                except ValueError:
                   print 'invalid input: parameter must be integer, was given string'
          elif action[0].lower() == 'attack':
@@ -371,6 +378,7 @@ def play():
          elif action[0].lower() == 'debug':
             print 'effects: %s' % map(lambda x: '%s:%s' % (x.func.__name__, x.keywords), game.effect_pool)
             print 'events: %s' % game.event_queue
+            print 'minion ids: %s' % game.minion_pool.keys()
          else:
             print 'unrecognized action'
       
