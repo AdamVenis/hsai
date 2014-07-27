@@ -2,11 +2,9 @@
 
 import Hearthstone
 import events
-import utils
+from utils import *
 
-spells = {} #TODO: populate this automatically (needs self-referral)
-
-def arcane_missles(game):
+def arcane_missiles(game):
    for i in range(3 + game.player.spellpower):
       game.event_queue.append((events.deal_damage, (game, choice(game.enemy.board).minion_id, 1)))
       
@@ -25,5 +23,4 @@ def fireball(game):
 def polymorph(game):
    target_id = Hearthstone.target(game)
    events.remove_traces(game, target_id)
-   
    

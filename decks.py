@@ -13,7 +13,7 @@ effect_testing = effects.effects.keys() # one of each minion with effects, witho
 effect_testing.remove('Druid')
 effect_testing.remove('Healing Totem')
 
-default_mage = ['Arcane Missles', 'Arcane Missles',
+default_mage = ['Arcane Missiles', 'Arcane Missiles',
                'Arcane Explosion', 'Arcane Explosion',
                'Arcane Intellect', 'Arcane Intellect',
                'Fireball', 'Fireball', 'Polymorph', 'Polymorph', 

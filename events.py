@@ -1,5 +1,6 @@
 from utils import *
-import effects
+import minion_effects
+import spell_effects
 import Hearthstone
 
 def draw(player):
@@ -14,18 +15,11 @@ def draw(player):
       player.hand.append(player.deck[0])
       del player.deck[0]
 
-def summon(game, player, ind): #specifically for summoning from hand
-   if ind >= len(player.hand):
-      print 'Bad index!'
-      return
-   elif player.hand[ind].cost > player.current_crystals:
-      print 'Not enough crystals! You need %s crystals for this.' % player.hand[ind].cost
-      return
-   else:
-      card = player.hand[ind]
-      player.current_crystals -= card.cost
-      del player.hand[ind]
-      
+def summon(game, player, index): #specifically for summoning from hand
+   card = player.hand[index]
+   player.current_crystals -= card.cost
+   del player.hand[index]
+   
    minion = Minion(game, player, card)
    game.minion_pool[minion.minion_id] = minion
    game.minion_counter += 1
@@ -35,8 +29,8 @@ def summon(game, player, ind): #specifically for summoning from hand
          minion.attacks_left = 2
       else:
          minion.attacks_left = 1
-   if effects.effects.get(card.name):
-      game.effect_pool.append(partial(effects.effects[card.name], id=minion.minion_id))
+   if minion_effects.effects.get(card.name):
+      game.effect_pool.append(partial(minion_effects.effects[card.name], id=minion.minion_id))
       
    Hearthstone.trigger_effects(game, ['battlecry', minion.minion_id])
       
@@ -50,8 +44,8 @@ def spawn(game, player, card): #equivalent of summon when not from hand
          minion.attacks_left = 2
       else:
          minion.attacks_left = 1
-   if effects.effects.get(card.name):
-      game.effect_pool.append(partial(effects.effects[card.name], id=minion.minion_id))
+   if minion_effects.effects.get(card.name):
+      game.effect_pool.append(partial(minion_effects.effects[card.name], id=minion.minion_id))
         
 def attack(game, ally_id, enemy_id): #x and y are the indices of the ally and enemy minions respectively
   
@@ -104,7 +98,15 @@ def deal_damage(game, id, damage):
 def heal(game, minion_id, amount):
    minion = game.minion_pool[minion_id]
    minion.current_health = min(minion.current_health + amount, minion.max_health)
-      
+
+def cast_spell(game, index):
+   spell_card = game.player.hand[index]
+   game.player.current_crystals -= spell_card.cost(game) #assumes spells can only be played on your turn
+   del game.player.hand[index]
+   
+   spell_effects.__dict__[name_to_func(spell_card.name)](game)
+   
+   
 def remove_traces(game, id): #removes effects and auras of a minion
    minion = game.minion_pool[id]
    game.effect_pool = filter(lambda x: x.keywords.get('id') != id, game.effect_pool) #remove relevant effects

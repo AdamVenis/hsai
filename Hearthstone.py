@@ -14,17 +14,23 @@ from random import shuffle, randint, choice
 from collections import deque
 from events import *
 from utils import *
-import effects
+import minion_effects
+import spell_effects
 import decks
 
-def get_minions(): #for local temp variables
+def get_minions_and_spells(): #for local temp variables
    raw_cards = loads(open("AllSets.json").read())
    minions = []
+   spells = []
    for val in raw_cards.values():
-      minions += filter(lambda x:x["type"]=="Minion", val)
-   return minions
+      for card in val:
+         if card['type'] == 'Minion':
+            minions.append(card)
+         elif card['type'] == 'Spell':
+            spells.append(card)
+   return minions, spells
    
-minions = get_minions()
+minions, spells = get_minions_and_spells()
    
 def get_card_index(card):
    for index, minion in enumerate(minions):
@@ -32,16 +38,20 @@ def get_card_index(card):
          return index
    return None
    
-def get_card(card):
-   for index, minion in enumerate(minions):
-      if minion['name'] == card:
+def get_card(card_name):
+   for minion in minions:
+      if minion['name'] == card_name:
          attributes = ['name', 'cost', 'attack', 'health', 'mechanics']
          rtn = Card(*map(minion.get, attributes))
-         if not rtn.mechanics: # turn mechanics from None to [] for membership testing
+         if not rtn.mechanics: # turn mechanics from None to emptyset for membership testing
             rtn.mechanics = set([])
          else:
             rtn.mechanics = set(rtn.mechanics)
          return rtn
+   for spell in spells:
+      if spell['name'] == card_name:
+         return SpellCard(spell['name'], spell['cost'])
+   print 'ERROR: CARD NOT FOUND: %s' % card_name
          
 def get_deck(names):
    deck = map(get_card, names)
@@ -167,7 +177,7 @@ def hero_power(game):
    elif h == 'druid':
       game.player.armor += 1
       game.player.board[0].attack += 1
-      game.effect_pool.append(   effects.effects['Druid'])
+      game.effect_pool.append(minion_effects.effects['Druid'])
    game.player.can_hp = False
    game.player.current_crystals -= 2
       
@@ -186,7 +196,7 @@ def play():
       while hero.lower() not in ['warrior', 'hunter', 'mage', 'warlock', 'shaman', 'rogue', 'priest', 'paladin', 'druid']:
          print 'not a valid hero! choose again'
          hero = raw_input()   
-      player = Player(hero=hero, hand=[], deck=get_deck(decks.effect_testing), board=[], secrets=[], crystals=0, current_crystals=0, 
+      player = Player(hero=hero, hand=[], deck=get_deck(decks.default_mage), board=[], secrets=[], crystals=0, current_crystals=0, 
                      armor=0, weapon=None, auras=[], spellpower=0, fatigue=0, can_hp=True)
       if i == 0:
          p1 = player
@@ -232,7 +242,6 @@ def play():
             event[0](*event[1]) # tuple with arguments in second slot
             continue
             
-         #TODO: check if effects are triggered?
          display(game, p1, p2)
          if p1.board[0].health(game) <= 0 or p2.board[0].health(game) <= 0:
             break
@@ -242,23 +251,47 @@ def play():
             print 'unable to parse action'
          elif action[0].lower() in ['end', 'end turn']:
             trigger_effects(game, ['end_turn', p])
-            for minion in p.board:
-               if 'Frozen' in minion.mechanics:
-                  minion.mechanics.remove('Frozen')
             break
          elif action[0].lower() == 'hero' and action[1].lower() == 'power':
             hero_power(game)
          elif action[0].lower() == 'summon':
-            if len(action) < 2: 
-               print 'incorrect number of arguments'
+            if len(action) != 2: 
+               print 'incorrect number of arguments: needs exactly 2'
             else: 
                try:
-                  game.event_queue.append((summon, (game, p, int(action[1]))))
+                  index = int(action[1])
                except ValueError:
-                  print 'invalid input: parameter must be integer, was given string'
+                  print 'invalid input: parameter must be integer, was given string'              
+                  continue
+               if index not in range(len(p.hand)):
+                  print 'invalid index'
+               elif p.hand[index].__class__ != Card: #this doesn't account for minion/spell name conflicts
+                  print 'this card is not a minion and cannot be summoned'                  
+               elif p.hand[index].cost > p.current_crystals:
+                  print 'not enough crystals! need %s' % str(p.hand[index].cost)
+               else:
+                  game.event_queue.append((summon, (game, p, index)))
+         elif action[0].lower() == 'cast':
+            if len(action) != 2:
+               print 'incorrect number of arguments: needs exactly 2'
+            else:
+               try:
+                  index = int(action[1])
+               except ValueError as e:
+                  print 'invalid input: parameters must be integers, was given strings'
+                  print e
+                  continue
+               if index not in range(len(p.hand)):
+                  print 'invalid index'
+               elif p.hand[index].__class__ != SpellCard:
+                  print 'this card is not a spell and cannot be cast'
+               elif p.hand[index].cost(game) > p.current_crystals:
+                  print 'not enough crystals! need %s' % str(p.hand[index].cost(game))
+               else:
+                  game.event_queue.append((cast_spell, (game, index)))
          elif action[0].lower() == 'attack':
-            if len(action) < 3:
-               print 'incorrect number of arguments'
+            if len(action) != 3:
+               print 'incorrect number of arguments: needs exactly 3'
             else:
                try:
                   action[1], action[2] = int(action[1]), int(action[2])

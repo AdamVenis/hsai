@@ -4,11 +4,27 @@ from random import choice
 
 Game = recordtype('Game', 'player enemy effect_pool event_queue minion_pool minion_counter')
 Player = recordtype('Player', 'hero hand deck board secrets crystals current_crystals armor weapon auras spellpower fatigue can_hp')
-Card = recordtype('Card', 'name cost attack health mechanics')
+#Card = recordtype('Card', 'name cost attack health mechanics')
 #Minion = recordtype('Minion', 'name neutral_attack attack neutral_health max_health health mechanics attacks_left minion_id owner')
-Weapon = recordtype('Weapon', 'attack durability')
 Aura = recordtype('Aura', 'type attack_modifier health_modifier id') 
 
+class Card():
+   def __init__(self, name, cost, attack, health, mechanics):
+      self.name = name
+      self.cost = cost
+      self.attack = attack
+      self.health = health
+      self.mechanics = mechanics
+       
+class SpellCard():
+   def __init__(self, name, cost):
+      self.name = name
+      self.neutral_cost = cost
+      
+   def cost(self, game):
+      rtn = self.neutral_cost
+      return rtn
+     
 class Minion():
    def __init__(self, game, player, card):
       self.name = card.name
@@ -38,7 +54,7 @@ class Weapon():
       self.current_attack = attack
       self.durability = durability
    
-   def attack(self, game):
+   def attack(self, game): # to make room for auras (aka for spiteful smith)
       rtn = self.current_attack
       return rtn
 
@@ -75,6 +91,6 @@ def func_to_name(s):
    return ' '.join([word[0].upper() + word[1:] for word in s])
    
 def name_to_func(s):
-   s.replace(' ', '_')
+   s = s.replace(' ', '_')
    return s.lower()
    

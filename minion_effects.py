@@ -1,4 +1,5 @@
 #alphabetical order!
+
 import Hearthstone
 import events
 
@@ -9,7 +10,7 @@ def acolyte_of_pain(game, trigger, id):
       events.draw(game.minion_pool[id].owner)
 effects['Acolyte of Pain'] = acolyte_of_pain
 
-'''def amani_berserker(game, trigger, id): # this is probably wrong on conjunction with Auchenai Soulpriest
+'''def amani_berserker(game, trigger, id): # this is probably wrong in conjunction with Auchenai Soulpriest
    minion = game.minion_pool[id]
    if trigger[0] == 'deal_damage' and trigger[1] == id:
       minion.attack += 3
