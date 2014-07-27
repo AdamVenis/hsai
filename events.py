@@ -29,8 +29,8 @@ def summon(game, player, index): #specifically for summoning from hand
          minion.attacks_left = 2
       else:
          minion.attacks_left = 1
-   if minion_effects.effects.get(card.name):
-      game.effect_pool.append(partial(minion_effects.effects[card.name], id=minion.minion_id))
+   if minion_effects.minion_effects.get(card.name):
+      game.effect_pool.append(partial(minion_effects.minion_effects[card.name], id=minion.minion_id))
       
    Hearthstone.trigger_effects(game, ['battlecry', minion.minion_id])
       
@@ -44,8 +44,8 @@ def spawn(game, player, card): #equivalent of summon when not from hand
          minion.attacks_left = 2
       else:
          minion.attacks_left = 1
-   if minion_effects.effects.get(card.name):
-      game.effect_pool.append(partial(minion_effects.effects[card.name], id=minion.minion_id))
+   if minion_effects.minion_effects.get(card.name):
+      game.effect_pool.append(partial(minion_effects.minion_effects[card.name], id=minion.minion_id))
         
 def attack(game, ally_id, enemy_id): #x and y are the indices of the ally and enemy minions respectively
   

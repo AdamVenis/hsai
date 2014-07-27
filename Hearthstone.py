@@ -7,7 +7,7 @@
 # http://hearthstonejson.com/
 
 # mechanics: Taunt, Stealth, Divine Shield, Windfury, Freeze, Enrage, HealTarget, Charge, Deathrattle, Aura, Combo, AdjacentBuff, Battlecry, Poisonous, Spellpower
-# implemented event types: start_turn, end_turn, kill_minion, attack, summon, deal_damage, heal, modify_stats
+# implemented event types: start_turn, end_turn, kill_minion, attack, summon, deal_damage, heal, cast_spell
 
 from json import loads
 from random import shuffle, randint, choice
@@ -50,7 +50,7 @@ def get_card(card_name):
          return rtn
    for spell in spells:
       if spell['name'] == card_name:
-         return SpellCard(spell['name'], spell['cost'])
+         return SpellCard(spell['name'], spell.get('cost') if spell.get('cost') is not None else 0) #for some reason some spells don't have a cost
    print 'ERROR: CARD NOT FOUND: %s' % card_name
          
 def get_deck(names):
@@ -205,9 +205,11 @@ def play():
 
    print '%s versus %s!' % (p1.hero, p2.hero)
    
-   for i in range(3): # initial hand size
+   for i in range(3):
       draw(p1)
+   for i in range(4):
       draw(p2)
+   p2.hand.append(get_card('The Coin'))
       
    game = Game(player=p2, enemy=p1, effect_pool=[], event_queue=deque(), minion_pool={}, minion_counter=1000) # pre-switched
    
