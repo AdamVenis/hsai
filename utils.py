@@ -6,7 +6,6 @@ Game = recordtype('Game', 'player enemy effect_pool event_queue minion_pool mini
 Player = recordtype('Player', 'hero hand deck board secrets crystals current_crystals armor weapon auras spellpower fatigue can_hp')
 #Card = recordtype('Card', 'name cost attack health mechanics')
 #Minion = recordtype('Minion', 'name neutral_attack attack neutral_health max_health health mechanics attacks_left minion_id owner')
-Aura = recordtype('Aura', 'type attack_modifier health_modifier id') 
 
 class Card():
    def __init__(self, name, cost, attack, health, mechanics):
@@ -43,10 +42,12 @@ class Minion():
       rtn = self.current_attack
       if self.owner.board.index(self) == 0 and self.owner.weapon: # this minion is a hero
          rtn += self.owner.weapon.attack
+      rtn = apply_auras(game, self.owner, self, 'attack', rtn)
       return rtn         
       
    def health(self, game):
       rtn = self.current_health
+      rtn = apply_auras(game, self.owner, self, 'health', rtn)
       return rtn
       
 class Weapon():
@@ -58,6 +59,17 @@ class Weapon():
       rtn = self.current_attack
       return rtn
 
+class Aura():
+   def __init__(self, id, modifier):
+      self.id = id
+      self.modifier = modifier 
+      self.aux_vars = {}
+      
+def apply_auras(game, player, object, stat, value):
+   for aura in player.auras:
+      value = aura.modifier(game, object, stat, value)
+   return value
+   
 def validate_attack(game, player_ind, enemy_ind):
    if player_ind not in range(len(game.player.board)):
       print 'wrong index for ally minion. Must supply a number from 0 to %s' % str(len(game.player.board))

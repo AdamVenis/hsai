@@ -19,19 +19,7 @@ def summon(game, player, index): #specifically for summoning from hand
    card = player.hand[index]
    player.current_crystals -= card.cost
    del player.hand[index]
-   
-   minion = Minion(game, player, card)
-   game.minion_pool[minion.minion_id] = minion
-   game.minion_counter += 1
-   player.board.append(minion)
-   if 'Charge' in minion.mechanics:
-      if 'Windfury' in minion.mechanics:
-         minion.attacks_left = 2
-      else:
-         minion.attacks_left = 1
-   if minion_effects.minion_effects.get(card.name):
-      game.effect_pool.append(partial(minion_effects.minion_effects[card.name], id=minion.minion_id))
-      
+   minion = spawn(game, player, card)      
    Hearthstone.trigger_effects(game, ['battlecry', minion.minion_id])
       
 def spawn(game, player, card): #equivalent of summon when not from hand
@@ -46,6 +34,7 @@ def spawn(game, player, card): #equivalent of summon when not from hand
          minion.attacks_left = 1
    if minion_effects.minion_effects.get(card.name):
       game.effect_pool.append(partial(minion_effects.minion_effects[card.name], id=minion.minion_id))
+   return minion
         
 def attack(game, ally_id, enemy_id): #x and y are the indices of the ally and enemy minions respectively
   
@@ -123,7 +112,7 @@ def replace_minion(game, id, new_minion): # unclear if this is right, might want
          
 def kill_minion(game, id):
    minion = game.minion_pool[id]
-   remove_traces(game, id)
    minion.owner.board.remove(minion)   
+   minion.owner.auras = [aura for aura in minion.owner.auras if aura.id != id]
    del game.minion_pool[id]
   

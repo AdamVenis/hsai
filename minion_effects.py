@@ -71,6 +71,15 @@ def novice_engineer(game, trigger, id):
    if trigger[0] == 'battlecry' and trigger[1] == id:
       events.draw(game.player)
       return True 
+      
+def raid_leader(game, trigger, id):
+   def modifier(game, object, stat, value):
+      if isinstance(object, utils.Minion) and object != game.minion_pool[id] and object.owner == game.minion_pool[id].owner and stat == 'attack':
+         return value + 1
+      else:
+         return value
+   game.minion_pool[id].owner.auras.add(utils.Aura(id, modifier))
+   return True
    
 def water_elemental(game, trigger, id):
    if trigger[0] == 'attack' and id in trigger[1:]:

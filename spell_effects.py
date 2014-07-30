@@ -2,11 +2,12 @@
 
 import Hearthstone
 import events
-import utils
+import utils # can't import * from here cause locals() is used below, and it needs to be kept clean
+
 
 def arcane_missiles(game):
    for i in range(3 + game.player.spellpower):
-      game.event_queue.append((events.deal_damage, (game, choice(game.enemy.board).minion_id, 1)))
+      game.event_queue.append((events.deal_damage, (game, utils.choice(game.enemy.board).minion_id, 1)))
       
 def arcane_explosion(game):
    for minion in game.enemy.board[1:]:

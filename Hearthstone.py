@@ -197,7 +197,7 @@ def play():
          print 'not a valid hero! choose again'
          hero = raw_input()   
       player = Player(hero=hero, hand=[], deck=get_deck(decks.default_mage), board=[], secrets=[], crystals=0, current_crystals=0, 
-                     armor=0, weapon=None, auras=[], spellpower=0, fatigue=0, can_hp=True)
+                     armor=0, weapon=None, auras=set([]), spellpower=0, fatigue=0, can_hp=True)
       if i == 0:
          p1 = player
       else:
