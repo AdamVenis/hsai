@@ -1,6 +1,11 @@
 from functools import partial
 from recordtype import recordtype
-from random import choice
+from random import shuffle, randint, choice
+
+import decks
+import card_data
+#import minion_effects
+#import spell_effects
 
 Game = recordtype('Game', 'player enemy effect_pool event_queue minion_pool minion_counter')
 Player = recordtype('Player', 'hero hand deck board secrets crystals current_crystals armor weapon auras spellpower fatigue can_hp')
@@ -50,6 +55,16 @@ class Minion():
       rtn = apply_auras(game, self.owner, self, 'health', rtn)
       return rtn
       
+   def transform_into(self, new_minion):
+      self.name = new_minion.name
+      self.neutral_attack = new_minion.neutral_attack
+      self.current_attack = new_minion.current_attack
+      self.neutral_health = new_minion.neutral_health
+      self.max_health = new_minion.max_health
+      self.current_health = new_minion.current_health
+      self.mechanics = new_minion.mechanics
+      self.attacks_left = 0
+            
 class Weapon():
    def __init__(self, attack, durability):
       self.current_attack = attack
@@ -105,4 +120,79 @@ def func_to_name(s):
 def name_to_func(s):
    s = s.replace(' ', '_')
    return s.lower()
+   
+def is_hero(minion):
+   return minion.owner.board.index(minion) == 0
+   
+def display(game, p1, p2):   
+
+   p1_board_string = [[' '*9], 'P1 Board: %s' % ' '.join(map(lambda x:'|'+x.name+'|', p1.board[1:])), [' '*9]]
+   p2_board_string = [[' '*9], 'P2 Board: %s' % ' '.join(map(lambda x:'|'+x.name+'|', p2.board[1:])), [' '*9]]
+   
+   for minion in p1.board[1:]:
+      p1_board_string[0].append('-'*(len(minion.name)+2))
+      p1_board_string[2].append('|' + str(minion.attack(game)) 
+         + ' '*(len(minion.name) - len(str(minion.attack(game))) - len(str(minion.health(game)))) 
+         + str(minion.health(game)) + '|')
+      
+   p1_board_string[0] = ' '.join(p1_board_string[0])
+   p1_board_string[2] = ' '.join(p1_board_string[2])
+   p1_board_string.append(p1_board_string[0])
+   
+   for minion in p2.board[1:]:
+      p2_board_string[0].append('-'*(len(minion.name)+2))
+      p2_board_string[2].append('|' + str(minion.attack(game)) 
+         + ' '*(len(minion.name) - len(str(minion.attack(game))) - len(str(minion.health(game)))) 
+         + str(minion.health(game)) + '|')
+      
+   p2_board_string[0] = ' '.join(p2_board_string[0])
+   p2_board_string[2] = ' '.join(p2_board_string[2])
+   p2_board_string.append(p2_board_string[0])   
+   
+   print '-'*79
+   print 'P2 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (p2.hero, p2.current_crystals, p2.crystals, p2.board[0].health(game), 
+                                                '' if p2.armor == 0 else ', Armor : ' + str(p2.armor),
+                                                '' if p2.weapon == None else ', Weapon : ' + str(p2.weapon.attack(game)) + '/' + str(p2.weapon.durability),
+                                                '' if p2.board[0].attack == 0 else ', Attack : ' + str(p2.board[0].attack(game)))
+   print 'P2 Hand: %s' % ' | '.join(map(lambda x:x.name, p2.hand))
+   for i in range(len(p2_board_string[0])/79 + 1):
+      for j in p2_board_string:
+         print j[i*79:(i+1)*79]
+   for i in range(len(p1_board_string[0])/79 + 1):
+      for j in p1_board_string:
+         print j[i*79:(i+1)*79]
+   print 'P1 Hand: %s' % ' | '.join(map(lambda x:x.name, p1.hand))
+   print 'P1 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (p1.hero, p1.current_crystals, p1.crystals, p1.board[0].health(game), 
+                                                '' if p1.armor == 0 else ', Armor : ' + str(p1.armor),
+                                                '' if p1.weapon == None else ', Weapon : ' + str(p1.weapon.attack(game)) + '/' + str(p1.weapon.durability),
+                                                '' if p1.board[0].attack == 0 else ', Attack : ' + str(p1.board[0].attack(game)))  
+
+def trigger_effects(game, trigger):
+   game.effect_pool = filter(lambda x:not x(game, trigger), game.effect_pool)
+              
+def opponent(game, player):
+   if player == game.player:
+      return game.enemy
+   else:
+      return game.player
+
+def get_card(card_name):
+   for minion in card_data.minions:
+      if minion['name'] == card_name:
+         attributes = ['name', 'cost', 'attack', 'health', 'mechanics']
+         rtn = Card(*map(minion.get, attributes))
+         if not rtn.mechanics: # turn mechanics from None to emptyset for membership testing
+            rtn.mechanics = set([])
+         else:
+            rtn.mechanics = set(rtn.mechanics)
+         return rtn
+   for spell in card_data.spells:
+      if spell['name'] == card_name:
+         return SpellCard(spell['name'], spell.get('cost') if spell.get('cost') is not None else 0) #for some reason some spells don't have a cost
+   print 'ERROR: CARD NOT FOUND: %s' % card_name
+         
+def get_deck(names):
+   deck = map(get_card, names)
+   shuffle(deck) #LOL
+   return deck
    

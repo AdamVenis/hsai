@@ -4,7 +4,6 @@ import Hearthstone
 import events
 import utils # can't import * from here cause locals() is used below, and it needs to be kept clean
 
-
 def arcane_missiles(game):
    for i in range(3 + game.player.spellpower):
       game.event_queue.append((events.deal_damage, (game, utils.choice(game.enemy.board).minion_id, 1)))
@@ -18,12 +17,15 @@ def arcane_intellect(game):
       events.draw(game.player)
       
 def fireball(game):
-   target_id = Hearthstone.target(game)
+   target_id = events.target(game)
    game.event_queue.append((events.deal_damage, (game, target_id, 6 + game.player.spellpower)))
    
-def polymorph(game):
-   target_id = Hearthstone.target(game)
-   events.remove_traces(game, target_id)
+def polymorph(game): #TODO: this needs validation (cannot target heroes)
+   target_id = events.target(game)
+   events.silence(game, target_id)
+   minion = game.minion_pool[target_id]
+   chicken = utils.Minion(game, minion.owner, utils.get_card('Chicken'))
+   minion.transform_into(chicken)
    
 def the_coin(game):
    game.player.current_crystals += 1 # should this be capped at 10?

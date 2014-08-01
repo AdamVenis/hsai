@@ -27,7 +27,7 @@ def armorsmith(game, trigger, id):
 
 def cairne_bloodhoof(game, trigger, id):
    if trigger[0] == 'kill_minion' and trigger[1] == id:
-      game.event_queue.append((events.spawn, (game, game.minion_pool[id].owner, Hearthstone.get_card('Baine Bloodhoof'))))
+      game.event_queue.append((events.spawn, (game, game.minion_pool[id].owner, utils.get_card('Baine Bloodhoof'))))
       return True
 
 def druid(game, trigger, player): # hero power (TODO: this doesn't belong in this file)
@@ -37,7 +37,7 @@ def druid(game, trigger, player): # hero power (TODO: this doesn't belong in thi
 
 def earthen_ring_farseer(game, trigger, id):
    if trigger[0] == 'battlecry' and trigger[1] == id:
-      target_id = Hearthstone.target(game)
+      target_id = events.target(game)
       game.event_queue.append((events.heal, (game, target_id, 3)))
       return True
    return False
@@ -49,7 +49,7 @@ def gnomish_inventor(game, trigger, id):
 
 def harvest_golem(game, trigger, id):
    if trigger[0] == 'kill_minion' and trigger[1] == id:
-      game.event_queue.append((events.spawn, (game, game.minion_pool[id].owner, Hearthstone.get_card('Damaged Golem'))))
+      game.event_queue.append((events.spawn, (game, game.minion_pool[id].owner, utils.get_card('Damaged Golem'))))
       return True
 
 def healing_totem(game, trigger, id):
@@ -66,6 +66,11 @@ def loot_hoarder(game, trigger, id): #id gets partially applied when effect is c
    if trigger[0] == 'kill_minion' and trigger[1] == id:
       events.draw(game.minion_pool[id].owner)
       return True
+      
+def nightblade(game, trigger, id):
+   if trigger[0] == 'battlecry' and trigger[1] == id:
+      game.event_queue.append((events.deal_damage, (game, Hearthstone.opponent(game, game.minion_pool[id].owner).board[0].minion_id, 3)))
+      return True
 
 def novice_engineer(game, trigger, id):
    if trigger[0] == 'battlecry' and trigger[1] == id:
@@ -74,7 +79,7 @@ def novice_engineer(game, trigger, id):
       
 def raid_leader(game, trigger, id):
    def modifier(game, object, stat, value):
-      if isinstance(object, utils.Minion) and object != game.minion_pool[id] and object.owner == game.minion_pool[id].owner and stat == 'attack':
+      if isinstance(object, utils.Minion) and not utils.is_hero(object) and object != game.minion_pool[id] and object.owner == game.minion_pool[id].owner and stat == 'attack':
          return value + 1
       else:
          return value
