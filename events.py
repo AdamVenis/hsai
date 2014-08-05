@@ -122,7 +122,7 @@ def cast_spell(game, index):
 def silence(game, id): #removes effects and auras of a minion
    minion = game.minion_pool[id]
    game.effect_pool = [effect for effect in game.effect_pool if effect.keywords.get('id') != id]
-   minion.owner.auras = [aura for aura in minion.owner.auras if aura.id != id]
+   minion.owner.auras = set(aura for aura in minion.owner.auras if aura.id != id)
    
 def replace_minion(game, id, new_minion): # unclear if this is right, might want to invoke spawn
    old_minion = game.minion_pool[id]
@@ -137,7 +137,7 @@ def replace_minion(game, id, new_minion): # unclear if this is right, might want
 def kill_minion(game, id):
    minion = game.minion_pool[id]
    minion.owner.board.remove(minion)   
-   minion.owner.auras = [aura for aura in minion.owner.auras if aura.id != id]
+   minion.owner.auras = set(aura for aura in minion.owner.auras if aura.id != id)
    del game.minion_pool[id]
   
 def hero_power(game):

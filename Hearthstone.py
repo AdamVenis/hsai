@@ -3,7 +3,6 @@
 # need to install: 
 # recordtype https://pypi.python.org/pypi/recordtype/
 
-from collections import deque
 from utils import *
 import decks
 import card_data
@@ -13,43 +12,38 @@ import spell_effects
 
 def play():
    print choice(['Take a seat by the hearth!', 'Welcome back!', "Busy night! But there's always room for another!"])
-      
+   heroes = [None, None]
    for i in range(2):
       print 'Choose your class (Player %s)' % (i+1)
-      hero = raw_input()
-      while hero.lower() not in ['warrior', 'hunter', 'mage', 'warlock', 'shaman', 'rogue', 'priest', 'paladin', 'druid']:
+      heroes[i] = raw_input()
+      while heroes[i].lower() not in ['warrior', 'hunter', 'mage', 'warlock', 'shaman', 'rogue', 'priest', 'paladin', 'druid']:
          print 'not a valid hero! choose again'
-         hero = raw_input()   
-      player = Player(hero=hero, hand=[], deck=get_deck(decks.default_mage), board=[], secrets=[], crystals=0, current_crystals=0, 
-                     armor=0, weapon=None, auras=set([]), spellpower=0, fatigue=0, can_hp=True)
-      if i == 0:
-         p1 = player
-      else:
-         p2 = player
-
-   print '%s versus %s!' % (p1.hero, p2.hero)
+         heroes[i] = raw_input()   
+   
+   print '%s versus %s!' % tuple(heroes)
+   game = Game(heroes[0], heroes[1], get_deck(decks.default_mage), get_deck(decks.default_mage))
+   p1, p2 = game.player, game.enemy
    
    for i in range(3):
-      events.draw(p1)
+      game.event_queue.append((events.draw, (game.player,))) #gah, everything is backwards!
    for i in range(4):
-      events.draw(p2)
-   p2.hand.append(get_card('The Coin'))
-      
-   game = Game(player=p2, enemy=p1, effect_pool=[], event_queue=deque(), minion_pool={}, minion_counter=1000) # pre-switched
-   
-   for p in [p1, p2]:
-      events.spawn(game, p, Card('Dummy', 0, 0, 30, {}))
+      game.event_queue.append((events.draw, (game.enemy,)))
+   game.enemy.hand.append(get_card('The Coin'))
+
+   for player in [game.player, game.enemy]:
+      events.spawn(game, player, Card('Dummy', 0, 0, 30, {}))
    
    while True: #loops through turns
-      game.enemy, game.player = game.player, game.enemy
-      p, enemy = game.player, game.enemy
-      p.crystals = min(p.crystals + 1, 10)
-      p.current_crystals = p.crystals
-      events.draw(p)
+      if game.turn > 0:
+         game.enemy, game.player = game.player, game.enemy
+      player, enemy = game.player, game.enemy # implicit references for convenience
+      player.crystals = min(player.crystals + 1, 10)
+      player.current_crystals = player.crystals
+      game.event_queue.append((events.draw, (game.player,)))
       
-      print " \nIt is now player %d's turn" % (1 if p == p1 else 2)
+      print " \nIt is now player %d's turn" % ((game.turn % 2) + 1)
            
-      for minion in p.board:
+      for minion in player.board:
          if 'Windfury' in minion.mechanics:
             minion.attacks_left = 2
          elif 'Frozen' in minion.mechanics:
@@ -57,9 +51,9 @@ def play():
             minion.mechanics.add('Thawing')
          else:
             minion.attacks_left = 1
-      p.can_hp = True
+      player.can_hp = True
       
-      trigger_effects(game, ['start_turn', p])
+      trigger_effects(game, ['start_turn', player])
          
       while True: #loops through actions
          if game.event_queue: #performs any outstanding event
@@ -76,7 +70,8 @@ def play():
          if len(action) < 1:
             print 'unable to parse action'
          elif action[0].lower() in ['end', 'end turn']:
-            trigger_effects(game, ['end_turn', p])
+            trigger_effects(game, ['end_turn', player])
+            game.turn += 1
             break
          elif action[0].lower() == 'hero' and action[1].lower() == 'power':
             events.hero_power(game)
@@ -89,14 +84,14 @@ def play():
                except ValueError:
                   print 'invalid input: parameter must be integer, was given string'              
                   continue
-               if index not in range(len(p.hand)):
+               if index not in range(len(player.hand)):
                   print 'invalid index'
-               elif p.hand[index].__class__ != Card: #this doesn't account for minion/spell name conflicts
+               elif player.hand[index].__class__ != Card: #this doesn't account for minion/spell name conflicts
                   print 'this card is not a minion and cannot be summoned'                  
-               elif p.hand[index].cost > p.current_crystals:
-                  print 'not enough crystals! need %s' % str(p.hand[index].cost)
+               elif player.hand[index].cost > player.current_crystals:
+                  print 'not enough crystals! need %s' % str(player.hand[index].cost)
                else:
-                  game.event_queue.append((events.summon, (game, p, index)))
+                  game.event_queue.append((events.summon, (game, player, index)))
          elif action[0].lower() == 'cast':
             if len(action) != 2:
                print 'incorrect number of arguments: needs exactly 2'
@@ -107,12 +102,12 @@ def play():
                   print 'invalid input: parameters must be integers, was given strings'
                   print e
                   continue
-               if index not in range(len(p.hand)):
+               if index not in range(len(player.hand)):
                   print 'invalid index'
-               elif p.hand[index].__class__ != SpellCard:
+               elif player.hand[index].__class__ != SpellCard:
                   print 'this card is not a spell and cannot be cast'
-               elif p.hand[index].cost(game) > p.current_crystals:
-                  print 'not enough crystals! need %s' % str(p.hand[index].cost(game))
+               elif player.hand[index].cost(game) > player.current_crystals:
+                  print 'not enough crystals! need %s' % str(player.hand[index].cost(game))
                else:
                   game.event_queue.append((events.cast_spell, (game, index)))
          elif action[0].lower() == 'attack':

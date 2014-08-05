@@ -6,7 +6,7 @@ import utils
 
 def acolyte_of_pain(game, trigger, id):
    if trigger[0] == 'deal_damage' and trigger[1] == id:
-      events.draw(game.minion_pool[id].owner)
+      game.event_queue.append((events.draw, (game.minion_pool[id].owner,)))
 
 '''def amani_berserker(game, trigger, id): # this is probably wrong in conjunction with Auchenai Soulpriest
    minion = game.minion_pool[id]
@@ -44,7 +44,7 @@ def earthen_ring_farseer(game, trigger, id):
 
 def gnomish_inventor(game, trigger, id):
    if trigger[0] == 'battlecry' and trigger[1] == id:
-      events.draw(game.player)
+      game.event_queue.append((events.draw, (game.player,)))
       return True
 
 def harvest_golem(game, trigger, id):
@@ -64,7 +64,7 @@ def leper_gnome(game, trigger, id):
 
 def loot_hoarder(game, trigger, id): #id gets partially applied when effect is created
    if trigger[0] == 'kill_minion' and trigger[1] == id:
-      events.draw(game.minion_pool[id].owner)
+      game.event_queue.append((events.draw, (game.minion_pool[id].owner,)))
       return True
       
 def nightblade(game, trigger, id):
@@ -74,7 +74,7 @@ def nightblade(game, trigger, id):
 
 def novice_engineer(game, trigger, id):
    if trigger[0] == 'battlecry' and trigger[1] == id:
-      events.draw(game.player)
+      game.event_queue.append((events.draw, (game.player,)))
       return True 
       
 def raid_leader(game, trigger, id):

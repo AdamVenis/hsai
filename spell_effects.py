@@ -14,7 +14,7 @@ def arcane_explosion(game):
       
 def arcane_intellect(game):
    for i in range(2):
-      events.draw(game.player)
+      game.event_queue.append((events.draw, (game.player,)))
       
 def fireball(game):
    target_id = events.target(game)
