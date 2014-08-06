@@ -1,26 +1,38 @@
 from functools import partial
-from recordtype import recordtype
 from random import shuffle, randint, choice
 from collections import deque
 
 import decks
 import card_data
 
-Game = recordtype('Game', 'player enemy effect_pool event_queue minion_pool minion_counter')
-Player = recordtype('Player', 'hero hand deck board secrets crystals current_crystals armor weapon auras spellpower fatigue can_hp')
-
 class Game():
    def __init__(self, hero1, hero2, deck1, deck2):
-      self.player = Player(hero=hero1, hand=[], deck=deck1, board=[], secrets=[], crystals=0,
-            current_crystals=0, armor=0, weapon=None, auras=set([]), spellpower=0, fatigue=0, can_hp=True)
-      self.enemy = Player(hero=hero2, hand=[], deck=deck2, board=[], secrets=[], crystals=0,
-            current_crystals=0, armor=0, weapon=None, auras=set([]), spellpower=0, fatigue=0, can_hp=True)       
+      self.player = Player(hero=hero1, deck=deck1)
+      self.enemy = Player(hero=hero2, deck=deck2)
       self.turn = 0
       self.effect_pool = []
       self.event_queue = deque()
       self.minion_pool = {}
-      self.minion_counter = 1000 # dummy value
-      
+      self.minion_counter = 1000 # dummy value     
+         
+class Player():
+   def __init__(self, hero, deck):
+      self.hero = hero
+      self.deck = deck
+      self.hand = []
+      self.board = []
+      self.secrets = []
+      self.crystals = 0
+      self.current_crystals = 0
+      self.armor = 0
+      self.weapon = None
+      self.auras = set([])
+      self.spellpower = 0
+      self.fatigue = 0
+      self.can_hp = True
+      self.overload = 0
+      self.combo = 0
+
 class Card():
    def __init__(self, name, cost, attack, health, mechanics):
       self.name = name

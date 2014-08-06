@@ -1,8 +1,5 @@
 # tested with python version 2.7.3
 
-# need to install: 
-# recordtype https://pypi.python.org/pypi/recordtype/
-
 from utils import *
 import decks
 import card_data
@@ -23,16 +20,16 @@ def play():
    print '%s versus %s!' % tuple(heroes)
    game = Game(heroes[0], heroes[1], get_deck(decks.default_mage), get_deck(decks.default_mage))
    p1, p2 = game.player, game.enemy
-   
+      
    for i in range(3):
-      game.event_queue.append((events.draw, (game.player,))) #gah, everything is backwards!
+      game.event_queue.append((events.draw, (game.player,)))
    for i in range(4):
       game.event_queue.append((events.draw, (game.enemy,)))
-   game.enemy.hand.append(get_card('The Coin'))
-
-   for player in [game.player, game.enemy]:
-      events.spawn(game, player, Card('Dummy', 0, 0, 30, {}))
+   game.enemy.hand.append(get_card('The Coin'))    
    
+   for player in [game.player, game.enemy]:
+      events.spawn(game, player, Card(name='Dummy', cost=0, attack=0, health=30, mechanics={})) 
+      
    while True: #loops through turns
       if game.turn > 0:
          game.enemy, game.player = game.player, game.enemy
