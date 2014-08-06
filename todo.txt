@@ -1,0 +1,13 @@
+TODOs:
+
+- turn trigger params into dict
+- add enrage
+- add logging
+- add load from replay functionality
+- decouple the logic from play()
+- add overload/combo
+- add beast/murloc
+- fix the way card objects work
+- make spellpower work in conjunction with auras (velen), in particular arcane missiles
+- add mulligans
+- add the ability to specify the position of spawned minions
