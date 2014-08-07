@@ -67,7 +67,7 @@ def attack(game, ally_id, enemy_id): #x and y are the indices of the ally and en
    enemy_minion = game.minion_pool[enemy_id]
 
    if ally_minion == ally_minion.owner.board[0] and game.player.weapon:
-      game.player.weapon.durability -= 1 # this might need to be an event for gorehowl
+      game.player.weapon.durability -= 1 # this might need to be an action for gorehowl
       if game.player.weapon.durability == 0:
          game.player.weapon = None
          
@@ -81,7 +81,7 @@ def attack(game, ally_id, enemy_id): #x and y are the indices of the ally and en
    else:
       damage = ally_minion.attack(game)
       if damage > 0:
-         game.event_queue.append((deal_damage, (game, enemy_minion.minion_id, ally_minion.attack(game))))
+         game.action_queue.append((deal_damage, (game, enemy_minion.minion_id, ally_minion.attack(game))))
       
    if 'Divine Shield' in ally_minion.mechanics:
       ally_minion.mechanics.remove('Divine Shield')
@@ -90,7 +90,7 @@ def attack(game, ally_id, enemy_id): #x and y are the indices of the ally and en
       if enemy_minion == enemy_minion.owner.board[0] and enemy_minion.owner.weapon is not None:
          damage -= enemy_minion.owner.weapon.attack(game)
       if damage > 0:
-         game.event_queue.append((deal_damage, (game, ally_minion.minion_id, damage)))
+         game.action_queue.append((deal_damage, (game, ally_minion.minion_id, damage)))
    
 def deal_damage(game, id, damage):
    minion = game.minion_pool[id]
@@ -107,7 +107,7 @@ def deal_damage(game, id, damage):
       if minion.name == 'hero':
          trigger_effects(game, ['kill_hero', player]) # equivalent to highest priority?
       else:
-         game.event_queue.append((kill_minion, (game, id)))
+         game.action_queue.append((kill_minion, (game, id)))
          
 def heal(game, minion_id, amount):
    minion = game.minion_pool[minion_id]
@@ -150,7 +150,7 @@ def hero_power(game):
    
    h = game.player.hero.lower()
    if h == 'hunter':
-      game.event_queue.append((deal_damage, (game, game.enemy.board[0].minion_id, 2)))
+      game.action_queue.append((deal_damage, (game, game.enemy.board[0].minion_id, 2)))
    elif h == 'warrior':
       game.player.armor += 2
    elif h == 'shaman':
@@ -159,23 +159,23 @@ def hero_power(game):
          if i.name in totems:
             totems.remove(i.name)
       if totems: # not all have been removed
-         game.event_queue.append((spawn, (game, game.player, get_card(choice(totems)))))
+         game.action_queue.append((spawn, (game, game.player, get_card(choice(totems)))))
       else:
          print 'all totems have already been summoned!'
          return
    elif h == 'mage':
       id = target(game)
-      game.event_queue.append((deal_damage, (game, id, 1)))
+      game.action_queue.append((deal_damage, (game, id, 1)))
    elif h == 'warlock':
-      game.event_queue.append((deal_damage, (game, game.player, 0, 2)))
+      game.action_queue.append((deal_damage, (game, game.player, 0, 2)))
       draw(game.player)
    elif h == 'rogue':
       game.player.weapon = Weapon(1,2)
    elif h == 'priest':
       id = target(game)
-      game.event_queue.append((heal, (game, id, 2)))
+      game.action_queue.append((heal, (game, id, 2)))
    elif h == 'paladin':
-      game.event_queue.append((summon, (game, game.player, get_card('Silver Hand Recruit'))))
+      game.action_queue.append((summon, (game, game.player, get_card('Silver Hand Recruit'))))
    elif h == 'druid':
       game.player.armor += 1
       game.player.board[0].attack += 1

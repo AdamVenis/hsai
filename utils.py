@@ -11,7 +11,7 @@ class Game():
       self.enemy = Player(hero=hero2, deck=deck2)
       self.turn = 0
       self.effect_pool = []
-      self.event_queue = deque()
+      self.action_queue = deque()
       self.minion_pool = {}
       self.minion_counter = 1000 # dummy value     
          

@@ -3,7 +3,7 @@
 from utils import *
 import decks
 import card_data
-import events
+import actions
 import minion_effects
 import spell_effects
 
@@ -22,13 +22,13 @@ def play():
    p1, p2 = game.player, game.enemy
       
    for i in range(3):
-      game.event_queue.append((events.draw, (game.player,)))
+      game.action_queue.append((actions.draw, (game.player,)))
    for i in range(4):
-      game.event_queue.append((events.draw, (game.enemy,)))
+      game.action_queue.append((actions.draw, (game.enemy,)))
    game.enemy.hand.append(get_card('The Coin'))    
    
    for player in [game.player, game.enemy]:
-      events.spawn(game, player, Card(name='Dummy', cost=0, attack=0, health=30, mechanics={})) 
+      actions.spawn(game, player, Card(name='Dummy', cost=0, attack=0, health=30, mechanics={})) 
       
    while True: #loops through turns
       if game.turn > 0:
@@ -36,7 +36,7 @@ def play():
       player, enemy = game.player, game.enemy # implicit references for convenience
       player.crystals = min(player.crystals + 1, 10)
       player.current_crystals = player.crystals
-      game.event_queue.append((events.draw, (game.player,)))
+      game.action_queue.append((actions.draw, (game.player,)))
       
       print " \nIt is now player %d's turn" % ((game.turn % 2) + 1)
            
@@ -53,10 +53,10 @@ def play():
       trigger_effects(game, ['start_turn', player])
          
       while True: #loops through actions
-         if game.event_queue: #performs any outstanding event
-            event = game.event_queue.popleft()
-            trigger_effects(game, [event[0].__name__] + list(event[1][1:])) #[1:] 'game' gets cut out, as it's always the first parameter
-            event[0](*event[1]) # tuple with arguments in second slot
+         if game.action_queue: #performs any outstanding action
+            action = game.action_queue.popleft()
+            trigger_effects(game, [action[0].__name__] + list(action[1][1:])) #[1:] 'game' gets cut out, as it's always the first parameter
+            action[0](*action[1]) # tuple with arguments in second slot
             continue
             
          display(game, p1, p2)
@@ -71,7 +71,7 @@ def play():
             game.turn += 1
             break
          elif action[0].lower() == 'hero' and action[1].lower() == 'power':
-            events.hero_power(game)
+            actions.hero_power(game)
          elif action[0].lower() == 'summon':
             if len(action) != 2: 
                print 'incorrect number of arguments: needs exactly 2'
@@ -88,7 +88,7 @@ def play():
                elif player.hand[index].cost > player.current_crystals:
                   print 'not enough crystals! need %s' % str(player.hand[index].cost)
                else:
-                  game.event_queue.append((events.summon, (game, player, index)))
+                  game.action_queue.append((actions.summon, (game, player, index)))
          elif action[0].lower() == 'cast':
             if len(action) != 2:
                print 'incorrect number of arguments: needs exactly 2'
@@ -106,7 +106,7 @@ def play():
                elif player.hand[index].cost(game) > player.current_crystals:
                   print 'not enough crystals! need %s' % str(player.hand[index].cost(game))
                else:
-                  game.event_queue.append((events.cast_spell, (game, index)))
+                  game.action_queue.append((actions.cast_spell, (game, index)))
          elif action[0].lower() == 'attack':
             if len(action) != 3:
                print 'incorrect number of arguments: needs exactly 3'
@@ -116,12 +116,12 @@ def play():
                   if not validate_attack(game, action[1], action[2]):
                      continue
                   else:
-                     game.event_queue.append((events.attack, (game, game.player.board[action[1]].minion_id, game.enemy.board[action[2]].minion_id)))
+                     game.action_queue.append((actions.attack, (game, game.player.board[action[1]].minion_id, game.enemy.board[action[2]].minion_id)))
                except ValueError:
                   print 'invalid input: parameters must be integers, was given strings'
          elif action[0].lower() == 'debug':
             print 'effects: %s' % map(lambda x: '%s:%s' % (x.func.__name__, x.keywords), game.effect_pool)
-            print 'events: %s' % game.event_queue
+            print 'actions: %s' % game.action_queue
             print 'minion ids: %s' % game.minion_pool.keys()
          else:
             print 'unrecognized action'
