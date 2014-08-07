@@ -1,20 +1,15 @@
 # card data comes from:
 # http://hearthstonejson.com/
-
+# last updated: August 7th, 2014
 # mechanics: Taunt, Stealth, Divine Shield, Windfury, Freeze, Enrage, HealTarget, Charge, Deathrattle, Aura, Combo, AdjacentBuff, Battlecry, Poisonous, Spellpower
 
 from json import loads
 
-def get_minions_and_spells(): #for local temp variables
+def get_all_cards():
    raw_cards = loads(open("AllSets.json").read())
-   minions = []
-   spells = []
+   cards = []
    for val in raw_cards.values():
-      for card in val:
-         if card['type'] == 'Minion':
-            minions.append(card)
-         elif card['type'] == 'Spell':
-            spells.append(card)
-   return minions, spells
+      cards += val
+   return cards
    
-minions, spells = get_minions_and_spells()
+cards = get_all_cards()

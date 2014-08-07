@@ -18,17 +18,18 @@ def play():
          heroes[i] = raw_input()   
    
    print '%s versus %s!' % tuple(heroes)
-   game = Game(heroes[0], heroes[1], get_deck(decks.default_mage), get_deck(decks.default_mage))
+   game = Game(heroes[0], heroes[1], decks.default_mage, decks.default_mage)
    p1, p2 = game.player, game.enemy
       
    for i in range(3):
       game.action_queue.append((actions.draw, (game.player,)))
    for i in range(4):
       game.action_queue.append((actions.draw, (game.enemy,)))
-   game.enemy.hand.append(get_card('The Coin'))    
+   game.enemy.hand.append(get_card('The Coin', game.enemy))    
    
    for player in [game.player, game.enemy]:
-      actions.spawn(game, player, Card(name='Dummy', cost=0, attack=0, health=30, mechanics={})) 
+      actions.spawn(game, player, MinionCard(name='Dummy', neutral_cost=None, attack=0, 
+         health=30, mechanics={}, race=None, owner=player, card_id=None)) 
       
    while True: #loops through turns
       if game.turn > 0:
@@ -83,10 +84,10 @@ def play():
                   continue
                if index not in range(len(player.hand)):
                   print 'invalid index'
-               elif player.hand[index].__class__ != Card: #this doesn't account for minion/spell name conflicts
+               elif not isinstance(player.hand[index], MinionCard): #this doesn't account for minion/spell name conflicts
                   print 'this card is not a minion and cannot be summoned'                  
-               elif player.hand[index].cost > player.current_crystals:
-                  print 'not enough crystals! need %s' % str(player.hand[index].cost)
+               elif player.hand[index].cost(game) > player.current_crystals:
+                  print 'not enough crystals! need %s' % str(player.hand[index].cost(game))
                else:
                   game.action_queue.append((actions.summon, (game, player, index)))
          elif action[0].lower() == 'cast':
@@ -101,7 +102,7 @@ def play():
                   continue
                if index not in range(len(player.hand)):
                   print 'invalid index'
-               elif player.hand[index].__class__ != SpellCard:
+               elif not isinstance(player.hand[index], SpellCard):
                   print 'this card is not a spell and cannot be cast'
                elif player.hand[index].cost(game) > player.current_crystals:
                   print 'not enough crystals! need %s' % str(player.hand[index].cost(game))

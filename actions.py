@@ -42,7 +42,7 @@ def target(game):
    
 def summon(game, player, index): #specifically for summoning from hand
    card = player.hand[index]
-   player.current_crystals -= card.cost
+   player.current_crystals -= card.cost(game)
    del player.hand[index]
    minion = spawn(game, player, card)      
    Hearthstone.trigger_effects(game, ['battlecry', minion.minion_id])
@@ -139,7 +139,7 @@ def kill_minion(game, id):
    minion.owner.board.remove(minion)   
    minion.owner.auras = set(aura for aura in minion.owner.auras if aura.id != id)
    del game.minion_pool[id]
-  
+
 def hero_power(game):
    if game.player.current_crystals < 2:
       print 'not enough mana!'

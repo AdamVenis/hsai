@@ -7,8 +7,10 @@ import card_data
 
 class Game():
    def __init__(self, hero1, hero2, deck1, deck2):
-      self.player = Player(hero=hero1, deck=deck1)
-      self.enemy = Player(hero=hero2, deck=deck2)
+      self.player = Player(hero=hero1, deck=None) # weirdly cyclic dependancy with player, game and deck
+      self.enemy = Player(hero=hero2, deck=None)
+      self.player.deck = get_deck(deck1, self.player)
+      self.enemy.deck = get_deck(deck2, self.enemy)
       self.turn = 0
       self.effect_pool = []
       self.action_queue = deque()
@@ -34,22 +36,35 @@ class Player():
       self.combo = 0
 
 class Card():
-   def __init__(self, name, cost, attack, health, mechanics):
+   def __init__(self, name, neutral_cost, owner, card_id):
       self.name = name
-      self.cost = cost
-      self.attack = attack
-      self.health = health
-      self.mechanics = mechanics
-       
-class SpellCard():
-   def __init__(self, name, cost):
-      self.name = name
-      self.neutral_cost = cost
+      self.neutral_cost = neutral_cost
+      self.owner = owner
+      self.card_id = card_id
       
    def cost(self, game):
       rtn = self.neutral_cost
+      rtn = apply_auras(game, self.owner, self, 'play', rtn)      
       return rtn
-     
+   
+class MinionCard(Card):
+   def __init__(self, name, neutral_cost, attack, health, mechanics, race, owner, card_id):
+      Card.__init__(self, name, neutral_cost, owner, card_id)
+      self.attack = attack
+      self.health = health
+      self.mechanics = mechanics
+      self.race = race
+           
+class SpellCard(Card):
+   def __init__(self, name, neutral_cost, owner, card_id):
+      Card.__init__(self, name, neutral_cost, owner, card_id)
+
+class WeaponCard(Card):
+   def __init__(self, name, neutral_cost, attack, durability, owner, card_id):
+      Card.__init__(self, name, neutral_cost, owner, card_id)
+      self.attack = attack
+      self.durability = durability
+      
 class Minion():
    def __init__(self, game, player, card):
       self.name = card.name
@@ -197,23 +212,26 @@ def opponent(game, player):
    else:
       return game.player
 
-def get_card(card_name):
-   for minion in card_data.minions:
-      if minion['name'] == card_name:
-         attributes = ['name', 'cost', 'attack', 'health', 'mechanics']
-         rtn = Card(*map(minion.get, attributes))
-         if not rtn.mechanics: # turn mechanics from None to emptyset for membership testing
-            rtn.mechanics = set([])
-         else:
-            rtn.mechanics = set(rtn.mechanics)
-         return rtn
-   for spell in card_data.spells:
-      if spell['name'] == card_name:
-         return SpellCard(spell['name'], spell.get('cost') if spell.get('cost') is not None else 0) #for some reason some spells don't have a cost
-   print 'ERROR: CARD NOT FOUND: %s' % card_name
+def get_card(card_name, owner):
+   for card in card_data.cards:
+      if card.get('name') == card_name:
+         params = {'name': card.get('name'), 'neutral_cost': card.get('cost', 0), 'owner': owner, 'card_id': card.get('id')}
+         if card.get('type') == 'Minion':
+            params['attack'] = card.get('attack')
+            params['health'] = card.get('health')
+            params['mechanics'] = card.get('mechanics')
+            params['race'] = card.get('race')
+            return MinionCard(**params)
+         elif card.get('type') == 'Spell':
+            return SpellCard(**params)
+         elif card.get('type') == 'Weapon':
+            params['attack'] = card.get('attack')
+            params['durability'] = card.get('durability')
+            return WeaponCard(**params)
+   print 'ERROR: CARD NOT FOUND'
          
-def get_deck(names):
-   deck = map(get_card, names)
+def get_deck(names, owner):
+   deck = [get_card(name, owner) for name in names]
    shuffle(deck) #LOL
    return deck
    
