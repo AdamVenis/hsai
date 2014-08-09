@@ -2,15 +2,14 @@ from functools import partial
 from random import shuffle, randint, choice
 from collections import deque
 
-import decks
 import card_data
 
 class Game():
    def __init__(self, hero1, hero2, deck1, deck2):
-      self.player = Player(hero=hero1, deck=None) # weirdly cyclic dependancy with player, game and deck
+      self.player = Player(hero=hero1, deck=None) # weirdly cyclic dependency with player, game and deck
       self.enemy = Player(hero=hero2, deck=None)
-      self.player.deck = get_deck(deck1, self.player)
-      self.enemy.deck = get_deck(deck2, self.enemy)
+      self.player.deck = card_data.get_deck(deck1, self.player)
+      self.enemy.deck = card_data.get_deck(deck2, self.enemy)
       self.turn = 0
       self.effect_pool = []
       self.action_queue = deque()
@@ -211,27 +210,4 @@ def opponent(game, player):
       return game.enemy
    else:
       return game.player
-
-def get_card(card_name, owner):
-   for card in card_data.cards:
-      if card.get('name') == card_name:
-         params = {'name': card.get('name'), 'neutral_cost': card.get('cost', 0), 'owner': owner, 'card_id': card.get('id')}
-         if card.get('type') == 'Minion':
-            params['attack'] = card.get('attack')
-            params['health'] = card.get('health')
-            params['mechanics'] = card.get('mechanics')
-            params['race'] = card.get('race')
-            return MinionCard(**params)
-         elif card.get('type') == 'Spell':
-            return SpellCard(**params)
-         elif card.get('type') == 'Weapon':
-            params['attack'] = card.get('attack')
-            params['durability'] = card.get('durability')
-            return WeaponCard(**params)
-   print 'ERROR: CARD NOT FOUND'
-         
-def get_deck(names, owner):
-   deck = [get_card(name, owner) for name in names]
-   shuffle(deck) #LOL
-   return deck
    

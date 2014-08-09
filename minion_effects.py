@@ -1,6 +1,5 @@
 #alphabetical order!
 
-import Hearthstone
 import actions
 import utils
 
@@ -59,7 +58,7 @@ def healing_totem(game, trigger, id):
 
 def leper_gnome(game, trigger, id):
    if trigger[0] == 'kill_minion' and trigger[1] == id:
-      game.action_queue.append((actions.deal_damage, (game, Hearthstone.opponent(game, game.minion_pool[id].owner).board[0].minion_id, 2)))
+      game.action_queue.append((actions.deal_damage, (game, utils.opponent(game, game.minion_pool[id].owner).board[0].minion_id, 2)))
       return True
 
 def loot_hoarder(game, trigger, id): #id gets partially applied when effect is created
@@ -69,7 +68,7 @@ def loot_hoarder(game, trigger, id): #id gets partially applied when effect is c
       
 def nightblade(game, trigger, id):
    if trigger[0] == 'battlecry' and trigger[1] == id:
-      game.action_queue.append((actions.deal_damage, (game, Hearthstone.opponent(game, game.minion_pool[id].owner).board[0].minion_id, 3)))
+      game.action_queue.append((actions.deal_damage, (game, utils.opponent(game, game.minion_pool[id].owner).board[0].minion_id, 3)))
       return True
 
 def novice_engineer(game, trigger, id):
@@ -92,6 +91,6 @@ def water_elemental(game, trigger, id):
       enemy.attacks_left = 0
       enemy.mechanics.add('Frozen')
 
-exceptions = ['actions', 'Hearthstone', 'utils', 'exceptions', 'senjin_shieldmasta']
+exceptions = ['actions', 'utils', 'exceptions', 'senjin_shieldmasta']
 minion_effects = {utils.func_to_name(key):val for key,val in locals().items() if key[0] != '_' and key not in exceptions}
 # minion_effects["Sen'jin Shieldmasta"] = senjin_shieldmasta # this is an example of how exceptions work

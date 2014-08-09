@@ -1,6 +1,5 @@
 #NB: keep in alphabetical order
 
-import Hearthstone
 import actions
 import utils # can't import * from here cause locals() is used below, and it needs to be kept clean
 
@@ -30,6 +29,6 @@ def polymorph(game): #TODO: this needs validation (cannot target heroes)
 def the_coin(game):
    game.player.current_crystals += 1 # should this be capped at 10?
  
-exceptions = ['actions', 'Hearthstone', 'utils', 'exceptions', 'hunters_mark']
+exceptions = ['actions', 'utils', 'exceptions', 'hunters_mark']
 spell_effects = {utils.func_to_name(key):val for key,val in locals().items() if key[0] != '_' and key not in exceptions}
 # spell_effects["Hunter's Mark"] = hunters_mark # this is an example of how exceptions work  

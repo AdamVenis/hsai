@@ -1,7 +1,6 @@
 from utils import *
 import minion_effects
 import spell_effects
-import Hearthstone
 
 def draw(player):
    if not player.deck:
@@ -45,7 +44,7 @@ def summon(game, player, index): #specifically for summoning from hand
    player.current_crystals -= card.cost(game)
    del player.hand[index]
    minion = spawn(game, player, card)      
-   Hearthstone.trigger_effects(game, ['battlecry', minion.minion_id])
+   trigger_effects(game, ['battlecry', minion.minion_id])
       
 def spawn(game, player, card): #equivalent of summon when not from hand
    minion = Minion(game, player, card)

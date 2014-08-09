@@ -1,8 +1,8 @@
 # tested with python version 2.7.3
 
 from utils import *
+from card_data import *
 import decks
-import card_data
 import actions
 import minion_effects
 import spell_effects
@@ -137,3 +137,4 @@ def play():
          print "player 1 wins!"
          break
          
+play() # for debugging, just so it autoruns
