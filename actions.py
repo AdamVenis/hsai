@@ -1,6 +1,7 @@
 from utils import *
 import minion_effects
 import spell_effects
+import card_data
 
 
 def draw(game, player):
@@ -17,30 +18,36 @@ def draw(game, player):
         del player.deck[0]
 
         
-def target(game):
+def target(game, valid_targets=None):
     print 'pick a target'
     while True:
-        input = raw_input().split(' ')
-        if len(input) != 2:
+        user_input = raw_input().split(' ')
+        if len(user_input) != 2:
             print 'wrong number of parameters'
-        elif input[0] in ['a', 'ally']:
-            try:
-                if int(input[1]) in range(len(game.player.board)):
-                    return game.player.board[int(input[1])].minion_id
-                else:
-                    print 'wrong index'
-            except ValueError:
-                print 'invalid parameter: must be integer'
-        elif input[0] in ['e', 'enemy']:
-            try:
-                if int(input[1]) in range(len(game.enemy.board)):
-                    return game.enemy.board[int(input[1])].minion_id
-                else:
-                    print 'wrong index'
-            except ValueError:
-                print 'invalid parameter: must be integer'
+            continue
+        elif not is_int(user_input[1]):
+            print 'second argument must be an integer'
+            continue
+        elif user_input[0] not in ['a', 'ally', 'e', 'enemy']:
+            print 'first argument must refer to either the ally or the enemy'
+            continue
+            
+        user_input[1] = int(user_input[1])
+        if (user_input[0] in ['a', 'ally'] and user_input[1] not in range(len(game.player.board))) or (
+                user_input[0] in ['e', 'enemy'] and user_input[1] not in range(len(game.enemy.board))):
+            print 'second argument must be a valid index on the board'
+            continue
+            
+        if user_input[0] in ['a', 'ally']:
+            minion_id = game.player.board[user_input[1]].minion_id
         else:
-            print 'invalid input. e.g. enemy 0'
+            minion_id = game.enemy.board[user_input[1]].minion_id
+        
+        if valid_targets is not None and minion_id not in valid_targets:
+            print 'this is an invalid target for this action'
+            continue
+        else:
+            return minion_id
 
 
 def summon(game, player, index):  # specifically for summoning from hand
@@ -52,7 +59,7 @@ def summon(game, player, index):  # specifically for summoning from hand
 
 
 def spawn(game, player, card):  # equivalent of summon when not from hand
-    minion = Minion(game, player, card)
+    minion = Minion(game, card)
     game.minion_pool[minion.minion_id] = minion
     game.minion_counter += 1
     player.board.append(minion)
@@ -103,12 +110,12 @@ def attack(game, ally_id, enemy_id):
                 (deal_damage, (game, ally_minion.minion_id, damage)))
 
 
-def deal_damage(game, id, damage):
-    minion = game.minion_pool[id]
+def deal_damage(game, minion_id, damage):
+    minion = game.minion_pool[minion_id]
     player = minion.owner
     if minion.name == 'hero' and damage < player.armor:
         player.armor -= damage
-    elif game.minion_pool[id].name == 'hero' and player.armor:
+    elif game.minion_pool[minion_id].name == 'hero' and player.armor:
         minion.current_health -= damage - player.armor
         player.armor = 0
     else:
@@ -119,7 +126,7 @@ def deal_damage(game, id, damage):
             # equivalent to highest priority?
             trigger_effects(game, ['kill_hero', player])
         else:
-            game.action_queue.append((kill_minion, (game, id)))
+            game.action_queue.append((kill_minion, (game, minion_id)))
 
 
 def heal(game, minion_id, amount):
@@ -136,32 +143,18 @@ def cast_spell(game, index):
     spell_effects.__dict__[name_to_func(spell_card.name)](game)
 
 
-def silence(game, id):  # removes effects and auras of a minion
-    minion = game.minion_pool[id]
-    game.effect_pool = [
-        effect for effect in game.effect_pool if effect.keywords.get('id') != id]
-    minion.owner.auras = set(
-        aura for aura in minion.owner.auras if aura.id != id)
+def silence(game, minion_id):  # removes effects and auras of a minion
+    minion = game.minion_pool[minion_id]
+    game.effect_pool = [effect for effect in game.effect_pool if effect.keywords.get('id') != minion_id]
+    minion.owner.auras = set(aura for aura in minion.owner.auras if aura.id != minion_id)
 
 
-# unclear if this is right, might want to invoke spawn
-def replace_minion(game, id, new_minion):
-    old_minion = game.minion_pool[id]
-    new_minion.minion_id = id  # questionable
-    for i, minion in old_minion.owner:
-        if minion == old_minion:
-            minion.owner.board[i] = new_minion
-            break
-    game.minion_pool[id] = new_minion
-    remove_traces(game, id)
-
-
-def kill_minion(game, id):
-    minion = game.minion_pool[id]
+def kill_minion(game, minion_id):
+    minion = game.minion_pool[minion_id]
     minion.owner.board.remove(minion)
     minion.owner.auras = set(
-        aura for aura in minion.owner.auras if aura.id != id)
-    del game.minion_pool[id]
+        aura for aura in minion.owner.auras if aura.id != minion_id)
+    del game.minion_pool[minion_id]
 
 
 def hero_power(game):
@@ -181,32 +174,32 @@ def hero_power(game):
     elif h == 'shaman':
         totems = ['Healing Totem', 'Searing Totem',
                   'Stoneclaw Totem', 'Wrath of Air Totem']
-        for i in game.player.board:
-            if i.name in totems:
-                totems.remove(i.name)
+        for minion in game.player.board:
+            if minion.name in totems:
+                totems.remove(minion.name)
         if totems:  # not all have been removed
             game.action_queue.append(
-                (spawn, (game, game.player, get_card(choice(totems)))))
+                (spawn, (game, game.player, card_data.get_card(choice(totems)))))
         else:
             print 'all totems have already been summoned!'
             return
     elif h == 'mage':
-        id = target(game)
-        game.action_queue.append((deal_damage, (game, id, 1)))
+        target_id = target(game)
+        game.action_queue.append((deal_damage, (game, target_id, 1)))
     elif h == 'warlock':
         game.action_queue.append((deal_damage, (game, game.player, 0, 2)))
         game.action_queue.append((draw, (game, game.player)))
     elif h == 'rogue':
         game.player.weapon = Weapon(1, 2)
     elif h == 'priest':
-        id = target(game)
-        game.action_queue.append((heal, (game, id, 2)))
+        target_id = target(game)
+        game.action_queue.append((heal, (game, target_id, 2)))
     elif h == 'paladin':
         game.action_queue.append(
-            (summon, (game, game.player, get_card('Silver Hand Recruit'))))
+            (summon, (game, game.player, card_data.get_card('Silver Hand Recruit'))))
     elif h == 'druid':
         game.player.armor += 1
         game.player.board[0].attack += 1
-        game.effect_pool.append(minion_effects.effects['Druid'])
+        game.effect_pool.append(minion_effects.minion_effects['Druid'])
     game.player.can_hp = False
     game.player.current_crystals -= 2

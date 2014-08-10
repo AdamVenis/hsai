@@ -1,7 +1,7 @@
 # tested with python version 2.7.3
 
 from utils import *
-from card_data import *
+import card_data
 import decks
 import actions
 import minion_effects
@@ -33,7 +33,7 @@ def play():
         game.action_queue.append((actions.draw, (game, game.player,)))
     for i in range(4):
         game.action_queue.append((actions.draw, (game, game.enemy,)))
-    game.enemy.hand.append(get_card('The Coin', game.enemy))
+    game.enemy.hand.append(card_data.get_card('The Coin', game.enemy))
 
     for player in [game.player, game.enemy]:
         actions.spawn(game, player, MinionCard(name='Dummy', neutral_cost=None, attack=0,
@@ -42,8 +42,8 @@ def play():
     while True:  # loops through turns
         if game.turn > 0:
             game.enemy, game.player = game.player, game.enemy
-        # implicit references for convenience
-        player, enemy = game.player, game.enemy
+        # implicit reference for convenience
+        player = game.player
         player.crystals = min(player.crystals + 1, 10)
         player.current_crystals = player.crystals
         game.action_queue.append((actions.draw, (game, game.player,)))
@@ -139,7 +139,7 @@ def play():
                     except ValueError:
                         print 'invalid input: parameters must be integers, was given strings'
             elif action[0].lower() == 'debug':
-                print 'effects: %s' % map(lambda x: '%s:%s' % (x.func.__name__, x.keywords), game.effect_pool)
+                print 'effects: %s' % ['%s:%s' % (effect.func.__name, effect.keywords) for effect in game.effect_pool]
                 print 'actions: %s' % game.action_queue
                 print 'minion ids: %s' % game.minion_pool.keys()
             elif action[0].lower() == 'concede':

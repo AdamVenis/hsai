@@ -33,7 +33,7 @@ def polymorph(game):  # TODO: this needs validation (cannot target heroes)
     target_id = actions.target(game)
     actions.silence(game, target_id)
     minion = game.minion_pool[target_id]
-    chicken = utils.Minion(game, minion.owner, utils.get_card('Chicken'))
+    chicken = utils.Minion(game, utils.get_card('Chicken'))
     minion.transform_into(chicken)
 
 

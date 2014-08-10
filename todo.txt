@@ -11,8 +11,8 @@ TODOs:
 - add load from replay functionality
 - decouple the logic from play()
 - add beast/murloc
-- fix the way card objects work (why is it Card vs SpellCard?)
 - make spellpower work in conjunction with auras (velen), in particular arcane missiles
 - add mulligans
 - add the ability to specify the position of spawned minions
 - add priorities to actions
+- put hero data in a separate file

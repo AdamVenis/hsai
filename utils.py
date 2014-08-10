@@ -88,7 +88,7 @@ class WeaponCard(Card):
 
 class Minion():
 
-    def __init__(self, game, player, card):
+    def __init__(self, game, card):
         self.name = card.name
         self.neutral_attack = card.attack
         self.current_attack = card.attack
@@ -96,9 +96,10 @@ class Minion():
         self.max_health = card.health
         self.current_health = card.health
         self.mechanics = card.mechanics
+        self.race = card.race
         self.attacks_left = 0
         self.minion_id = game.minion_counter
-        self.owner = player
+        self.owner = card.owner
         game.minion_counter += 1
 
     def attack(self, game):  # TODO : add these to account for auras
@@ -187,6 +188,13 @@ def func_to_name(s):
 def name_to_func(s):
     s = s.replace(' ', '_')
     return s.lower()
+    
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
 
 
 def is_hero(minion):
