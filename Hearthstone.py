@@ -48,7 +48,7 @@ def play():
         player.current_crystals = player.crystals
         game.action_queue.append((actions.draw, (game, game.player,)))
 
-        print " \nIt is now player %d's turn" % ((game.turn % 2) + 1)
+        print " \nIt is now Player %d's turn" % ((game.turn % 2) + 1)
 
         for minion in player.board:
             if 'Windfury' in minion.mechanics:
@@ -56,6 +56,8 @@ def play():
             elif 'Frozen' in minion.mechanics:
                 minion.mechanics.remove('Frozen')
                 minion.mechanics.add('Thawing')
+            elif 'Thawing' in minion.mechanics:
+                minion.mechanics.remove('Thawing')
             else:
                 minion.attacks_left = 1
         player.can_hp = True
@@ -70,6 +72,7 @@ def play():
 
             if game.action_queue:  # performs any outstanding action
                 action = game.action_queue.popleft()
+                print action[0].__name__, list(action[1][1:])
                 # [1:] 'game' gets cut out, as it's always the first parameter
                 trigger_effects(
                     game, [action[0].__name__] + list(action[1][1:]))

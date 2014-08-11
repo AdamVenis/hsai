@@ -47,10 +47,12 @@ def target(game, valid_targets=None):
             print 'this is an invalid target for this action'
             continue
         else:
+            game.logger.info('TARGET %d' % minion_id)
             return minion_id
 
 
 def summon(game, player, index):  # specifically for summoning from hand
+    game.logger.info('SUMMON %s %d' % ('P1' if player == game.player1 else 'P2', index))
     card = player.hand[index]
     player.current_crystals -= card.cost(game)
     del player.hand[index]
@@ -71,17 +73,16 @@ def spawn(game, player, card):  # equivalent of summon when not from hand
     if minion_effects.minion_effects.get(card.name):
         game.effect_pool.append(
             partial(minion_effects.minion_effects[card.name], id=minion.minion_id))
+    game.logger.info('SPAWN %s %s' % ('P1' if player == game.player1 else 'P2', minion.name))
     return minion
 
 
-# x and y are the indices of the ally and enemy minions respectively
 def attack(game, ally_id, enemy_id):
-
+    game.logger.info('ATTACK %s %s' % (ally_id, enemy_id))
     ally_minion = game.minion_pool[ally_id]
     enemy_minion = game.minion_pool[enemy_id]
 
     if ally_minion == ally_minion.owner.board[0] and game.player.weapon:
-        # this might need to be an action for gorehowl
         game.player.weapon.durability -= 1
         if game.player.weapon.durability == 0:
             game.player.weapon = None
@@ -111,6 +112,7 @@ def attack(game, ally_id, enemy_id):
 
 
 def deal_damage(game, minion_id, damage):
+    game.logger.info('DEAL_DAMAGE %d %d' % (minion_id, damage))
     minion = game.minion_pool[minion_id]
     player = minion.owner
     if minion.name == 'hero' and damage < player.armor:
@@ -130,12 +132,14 @@ def deal_damage(game, minion_id, damage):
 
 
 def heal(game, minion_id, amount):
+    game.logger.info('HEAL %d %d' % (minion_id, amount))
     minion = game.minion_pool[minion_id]
     minion.current_health = min(
         minion.current_health + amount, minion.max_health)
 
 
 def cast_spell(game, index):
+    game.logger.info('CAST %d' % index)
     spell_card = game.player.hand[index]
     # assumes spells can only be played on your turn
     game.player.current_crystals -= spell_card.cost(game)
@@ -143,13 +147,15 @@ def cast_spell(game, index):
     spell_effects.__dict__[name_to_func(spell_card.name)](game)
 
 
-def silence(game, minion_id):  # removes effects and auras of a minion
+def silence(game, minion_id):  # removes effects and auras of a minion. or does it? (gurubashi)
+    game.logger.info('SILENCE %d' % minion_id)
     minion = game.minion_pool[minion_id]
     game.effect_pool = [effect for effect in game.effect_pool if effect.keywords.get('id') != minion_id]
     minion.owner.auras = set(aura for aura in minion.owner.auras if aura.id != minion_id)
 
 
 def kill_minion(game, minion_id):
+    game.logger.info('KILL_MINION %d' % minion_id)    
     minion = game.minion_pool[minion_id]
     minion.owner.board.remove(minion)
     minion.owner.auras = set(
@@ -158,6 +164,7 @@ def kill_minion(game, minion_id):
 
 
 def hero_power(game):
+    game.logger.info('HERO_POWER %s' % game.player.hero)    
     if game.player.current_crystals < 2:
         print 'not enough mana!'
         return
