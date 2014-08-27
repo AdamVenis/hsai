@@ -6,7 +6,6 @@ import card_data
 
 
 class Game():
-
     def __init__(self, hero1, hero2, deck1, deck2, logger):
         # weirdly cyclic dependency with player, game and deck
         self.player1 = Player(hero=hero1, deck=None)
@@ -26,7 +25,6 @@ class Game():
 
 
 class Player():
-
     def __init__(self, hero, deck):
         self.hero = hero
         self.deck = deck
@@ -49,7 +47,6 @@ class Player():
 
 
 class Card():
-
     def __init__(self, name, neutral_cost, owner, card_id):
         self.name = name
         self.neutral_cost = neutral_cost
@@ -63,7 +60,6 @@ class Card():
 
 
 class MinionCard(Card):
-
     def __init__(self, name, neutral_cost, attack, health, mechanics, race, owner, card_id):
         Card.__init__(self, name, neutral_cost, owner, card_id)
         self.attack = attack
@@ -73,13 +69,11 @@ class MinionCard(Card):
 
 
 class SpellCard(Card):
-
     def __init__(self, name, neutral_cost, owner, card_id):
         Card.__init__(self, name, neutral_cost, owner, card_id)
 
 
 class WeaponCard(Card):
-
     def __init__(self, name, neutral_cost, attack, durability, owner, card_id):
         Card.__init__(self, name, neutral_cost, owner, card_id)
         self.attack = attack
@@ -87,7 +81,6 @@ class WeaponCard(Card):
 
 
 class Minion():
-
     def __init__(self, game, card):
         self.name = card.name
         self.neutral_attack = card.attack
@@ -127,7 +120,6 @@ class Minion():
 
 
 class Weapon():
-
     def __init__(self, attack, durability):
         self.current_attack = attack
         self.durability = durability
@@ -138,13 +130,12 @@ class Weapon():
 
 
 class Aura():
-
     def __init__(self, id, modifier):
         self.id = id
         self.modifier = modifier
         self.aux_vars = {}
 
-
+                                               
 def apply_auras(game, player, object, stat, value):
     for aura in player.auras:
         value = aura.modifier(game, object, stat, value)

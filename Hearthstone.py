@@ -9,6 +9,23 @@ import spell_effects
 import logging
 
 
+def prepare_match(game):
+    pregame_data = {}
+    pregame_data['P1'] = {'hero': game.player1.hero, 'deck': [minion.name for minion in game.player1.deck]}
+    pregame_data['P2'] = {'hero': game.player2.hero, 'deck': [minion.name for minion in game.player2.deck]}
+    
+    game.logger.info('PREGAME %s' % pregame_data)
+    for i in range(3):
+        game.action_queue.append((actions.draw, (game, game.player,)))
+    for i in range(4):
+        game.action_queue.append((actions.draw, (game, game.enemy,)))
+    game.enemy.hand.append(card_data.get_card('The Coin', game.enemy))
+
+    for player in [game.player, game.enemy]:
+        actions.spawn(game, player, MinionCard(name='Dummy', neutral_cost=None, attack=0,
+                                               health=30, mechanics={}, race=None, owner=player, card_id=None))
+
+
 def play():
 
     logger = logging.getLogger()
@@ -26,18 +43,8 @@ def play():
             heroes[i] = raw_input()
 
     print '%s versus %s!' % tuple(heroes)
-    game = Game(
-        heroes[0], heroes[1], decks.default_mage, decks.default_mage, logger)
-
-    for i in range(3):
-        game.action_queue.append((actions.draw, (game, game.player,)))
-    for i in range(4):
-        game.action_queue.append((actions.draw, (game, game.enemy,)))
-    game.enemy.hand.append(card_data.get_card('The Coin', game.enemy))
-
-    for player in [game.player, game.enemy]:
-        actions.spawn(game, player, MinionCard(name='Dummy', neutral_cost=None, attack=0,
-                                               health=30, mechanics={}, race=None, owner=player, card_id=None))
+    game = Game(heroes[0], heroes[1], decks.default_mage, decks.default_mage, logger)   
+    prepare_match(game)
 
     while True:  # loops through turns
         if game.turn > 0:
@@ -146,6 +153,7 @@ def play():
                 print 'actions: %s' % game.action_queue
                 print 'minion ids: %s' % game.minion_pool.keys()
             elif action[0].lower() == 'concede':
+                game.logger.info('CONCEDE %s' % ('P1' if player == game.player1 else 'P2'))
                 game.player.board[0].current_health = 0
                 break
             else:
