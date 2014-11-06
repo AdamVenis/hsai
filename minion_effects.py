@@ -1,12 +1,13 @@
 # alphabetical order!
 
 import actions
+import events
 import utils
 
 
 def acolyte_of_pain(game, trigger, id):
     if trigger[0] == 'deal_damage' and trigger[1] == id:
-        game.action_queue.append((actions.draw, (game.minion_pool[id].owner,)))
+        game.action_queue.append((events.draw, (game.minion_pool[id].owner,)))
 
 '''def amani_berserker(game, trigger, id): # this is probably wrong in conjunction with Auchenai Soulpriest
    minion = game.minion_pool[id]
@@ -31,7 +32,7 @@ def armorsmith(game, trigger, id):
 def cairne_bloodhoof(game, trigger, id):
     if trigger[0] == 'kill_minion' and trigger[1] == id:
         game.action_queue.append(
-            (actions.spawn, (game, game.minion_pool[id].owner, utils.get_card('Baine Bloodhoof'))))
+            (events.spawn, (game, game.minion_pool[id].owner, utils.get_card('Baine Bloodhoof'))))
         return True
 
 
@@ -44,22 +45,22 @@ def druid(game, trigger, player):
 
 def earthen_ring_farseer(game, trigger, id):
     if trigger[0] == 'battlecry' and trigger[1] == id:
-        target_id = actions.target(game)
-        game.action_queue.append((actions.heal, (game, target_id, 3)))
+        target_id = events.target(game)
+        game.action_queue.append((events.heal, (game, target_id, 3)))
         return True
     return False
 
 
 def gnomish_inventor(game, trigger, id):
     if trigger[0] == 'battlecry' and trigger[1] == id:
-        game.action_queue.append((actions.draw, (game, game.player,)))
+        game.action_queue.append((events.draw, (game, game.player,)))
         return True
 
 
 def harvest_golem(game, trigger, id):
     if trigger[0] == 'kill_minion' and trigger[1] == id:
         game.action_queue.append(
-            (actions.spawn, (game, game.minion_pool[id].owner, utils.get_card('Damaged Golem'))))
+            (events.spawn, (game, game.minion_pool[id].owner, utils.get_card('Damaged Golem'))))
         return True
 
 
@@ -67,12 +68,12 @@ def healing_totem(game, trigger, id):
     if trigger[0] == 'end_turn' and game.minion_pool[id].owner == trigger[1]:
         for minion in game.minion_pool[id].owner.board[1:]:
             game.action_queue.append(
-                (actions.heal, (game, minion.minion_id, 1)))
+                (events.heal, (game, minion.minion_id, 1)))
 
 
 def leper_gnome(game, trigger, id):
     if trigger[0] == 'kill_minion' and trigger[1] == id:
-        game.action_queue.append((actions.deal_damage, (game, utils.opponent(
+        game.action_queue.append((deal_damage, (game, utils.opponent(
             game, game.minion_pool[id].owner).board[0].minion_id, 2)))
         return True
 
@@ -81,20 +82,20 @@ def leper_gnome(game, trigger, id):
 def loot_hoarder(game, trigger, id):
     if trigger[0] == 'kill_minion' and trigger[1] == id:
         game.action_queue.append(
-            (actions.draw, (game, game.minion_pool[id].owner,)))
+            (events.draw, (game, game.minion_pool[id].owner,)))
         return True
 
 
 def nightblade(game, trigger, id):
     if trigger[0] == 'battlecry' and trigger[1] == id:
-        game.action_queue.append((actions.deal_damage, (game, utils.opponent(
+        game.action_queue.append((deal_damage, (game, utils.opponent(
             game, game.minion_pool[id].owner).board[0].minion_id, 3)))
         return True
 
 
 def novice_engineer(game, trigger, id):
     if trigger[0] == 'battlecry' and trigger[1] == id:
-        game.action_queue.append((actions.draw, (game, game.player,)))
+        game.action_queue.append((events.draw, (game, game.player,)))
         return True
 
 

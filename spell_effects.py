@@ -3,36 +3,37 @@
 import actions
 # can't import * from here cause locals() is used below, and it needs to
 # be kept clean
+import events
 import utils
 
 
 def arcane_missiles(game):
     for i in range(3 + game.player.spellpower):
         game.action_queue.append(
-            (actions.deal_damage, (game, utils.choice(game.enemy.board).minion_id, 1)))
+            (events.deal_damage, (game, utils.choice(game.enemy.board).minion_id, 1)))
 
 
 def arcane_explosion(game):
     for minion in game.enemy.board[1:]:
         game.action_queue.append(
-            (actions.deal_damage, (game, minion.minion_id, 1 + game.player.spellpower)))
+            (events.deal_damage, (game, minion.minion_id, 1 + game.player.spellpower)))
 
 
 def arcane_intellect(game):
     for i in range(2):
-        game.action_queue.append((actions.draw, (game, game.player,)))
+        game.action_queue.append((events.draw, (game, game.player,)))
 
 
 def fireball(game):
-    target_id = actions.target(game)
+    target_id = events.target(game)
     game.action_queue.append(
-        (actions.deal_damage, (game, target_id, 6 + game.player.spellpower)))
+        (events.deal_damage, (game, target_id, 6 + game.player.spellpower)))
 
 
 def polymorph(game):  # TODO: this needs validation (cannot target heroes)
-    target_id = actions.target(game, [minion.minion_id for minion in game.player.board[1:]] + 
+    target_id = events.target(game, [minion.minion_id for minion in game.player.board[1:]] + 
             [minion.minion_id for minion in game.enemy.board[1:]])
-    actions.silence(game, target_id)
+    events.silence(game, target_id)
     minion = game.minion_pool[target_id]
     chicken = utils.Minion(game, card_data.get_card('Chicken'))
     minion.transform_into(chicken)

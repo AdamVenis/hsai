@@ -1,12 +1,10 @@
-from functools import partial
 from random import shuffle, randint, choice
 from collections import deque
-
 import card_data
 
 
 class Game():
-    def __init__(self, hero1, hero2, deck1, deck2, logger):
+    def __init__(self, hero1, hero2, deck1, deck2, logger, aux_vals):
         # weirdly cyclic dependency with player, game and deck
         self.player1 = Player(hero=hero1, deck=None)
         self.player2 = Player(hero=hero2, deck=None)
@@ -22,6 +20,15 @@ class Game():
         self.minion_pool = {}
         self.minion_counter = 1000  # dummy value
         self.logger = logger
+        self.aux_vals = aux_vals
+        
+    def get_aux(self, size, random=False):
+        if self.aux_vals:
+            return aux_vals.pop()
+        elif random:
+            return randint(size)
+        else:
+            return target(game)
 
 
 class Player():
@@ -46,40 +53,6 @@ class Player():
         print 'PLAYER'  # TODO: this is stupid
 
 
-class Card():
-    def __init__(self, name, neutral_cost, owner, card_id):
-        self.name = name
-        self.neutral_cost = neutral_cost
-        self.owner = owner
-        self.card_id = card_id
-
-    def cost(self, game):
-        rtn = self.neutral_cost
-        rtn = apply_auras(game, self.owner, self, 'play', rtn)
-        return rtn
-
-
-class MinionCard(Card):
-    def __init__(self, name, neutral_cost, attack, health, mechanics, race, owner, card_id):
-        Card.__init__(self, name, neutral_cost, owner, card_id)
-        self.attack = attack
-        self.health = health
-        self.mechanics = mechanics
-        self.race = race
-
-
-class SpellCard(Card):
-    def __init__(self, name, neutral_cost, owner, card_id):
-        Card.__init__(self, name, neutral_cost, owner, card_id)
-
-
-class WeaponCard(Card):
-    def __init__(self, name, neutral_cost, attack, durability, owner, card_id):
-        Card.__init__(self, name, neutral_cost, owner, card_id)
-        self.attack = attack
-        self.durability = durability
-
-
 class Minion():
     def __init__(self, game, card):
         self.name = card.name
@@ -93,6 +66,7 @@ class Minion():
         self.attacks_left = 0
         self.minion_id = game.minion_counter
         self.owner = card.owner
+        game.minion_pool[self.minion_id] = self
         game.minion_counter += 1
 
     def attack(self, game):  # TODO : add these to account for auras
@@ -118,6 +92,9 @@ class Minion():
         self.mechanics = new_minion.mechanics
         self.attacks_left = 0
 
+    def __repr__(self):
+        return self.name
+
 
 class Weapon():
     def __init__(self, attack, durability):
@@ -135,7 +112,7 @@ class Aura():
         self.modifier = modifier
         self.aux_vars = {}
 
-                                               
+
 def apply_auras(game, player, object, stat, value):
     for aura in player.auras:
         value = aura.modifier(game, object, stat, value)
@@ -179,7 +156,8 @@ def func_to_name(s):
 def name_to_func(s):
     s = s.replace(' ', '_')
     return s.lower()
-    
+
+
 def is_int(s):
     try:
         int(s)
@@ -193,7 +171,7 @@ def is_hero(minion):
 
 
 def display(game):
-
+    print game.minion_pool
     player1_board_string = [[' ' * 9], 'P1 Board: %s' %
                             ' '.join(map(lambda x:'|' + x.name + '|', game.player1.board[1:])), [' ' * 9]]
     player2_board_string = [[' ' * 9], 'P2 Board: %s' %

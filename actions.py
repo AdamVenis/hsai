@@ -1,58 +1,134 @@
 from utils import *
+from events import deal_damage, draw, heal, spawn, target
 import minion_effects
 import spell_effects
 import card_data
 
+class Action():
+    def execute(self, game):
+        pass
 
-def draw(game, player):
-    game.logger.info('DRAW %s' % ('P1' if player == game.player1 else 'P2'))
-    if not player.deck:
-        print "We're out of cards!"
-        player.fatigue += 1
-        player.board[0].current_health -= player.fatigue
-    elif len(player.hand) == 10:
-        print 'hand is full! %s is burned' % player.deck[0].name
-        del player.deck[0]
-    else:
-        player.hand.append(player.deck[0])
-        del player.deck[0]
 
+class End(Action):
+    def __init__(self, action_string):
+        #TODO validation that the string is precisely "END"?
+        pass
+    
+    def execute(self, game):
+        #TODO wtf to do here?
+        pass
+
+
+class Summon(Action):
+    def __init__(self, game, action_string):
+        params = action_string.split()
+        if len(params) != 2:
+            raise Exception("SUMMON requires exactly one additional argument")
+        index = int(params[1])
+        if not (0 <= index < len(game.player.hand)):
+            raise Exception("Must SUMMON a valid index from your hand")
+        if not isinstance(player.hand[index], MinionCard):
+            raise Exception("Must SUMMON a Minion type card")
+        if game.player.hand[index].cost(game) > game.player.current_crystals:
+            raise Exception("Insufficient funds")
+        self.index = index
         
-def target(game, valid_targets=None):
-    print 'pick a target'
-    while True:
-        user_input = raw_input().split(' ')
-        if len(user_input) != 2:
-            print 'wrong number of parameters'
-            continue
-        elif not is_int(user_input[1]):
-            print 'second argument must be an integer'
-            continue
-        elif user_input[0] not in ['a', 'ally', 'e', 'enemy']:
-            print 'first argument must refer to either the ally or the enemy'
-            continue
-            
-        user_input[1] = int(user_input[1])
-        if (user_input[0] in ['a', 'ally'] and user_input[1] not in range(len(game.player.board))) or (
-                user_input[0] in ['e', 'enemy'] and user_input[1] not in range(len(game.enemy.board))):
-            print 'second argument must be a valid index on the board'
-            continue
-            
-        if user_input[0] in ['a', 'ally']:
-            minion_id = game.player.board[user_input[1]].minion_id
-        else:
-            minion_id = game.enemy.board[user_input[1]].minion_id
+    def execute(self, game):
+        card = game.player.hand[index]
+        game.player.current_crystals -= card.cost(game)
+        del game.player.hand[index]
+        minion = spawn(game, game.player, card)
+        trigger_effects(game, ['battlecry', minion.minion_id])
+
+
+class Attack(Action):
+    def __init__(self, game, action_string):
+        params = action_string.split()
+        if len(params) != 3:
+            raise Exception("ATTACK requires exactly two additional arguments")
+        source_index = int(params[1])
+        target_index = int(params[2])
+        if not (0 <= source_index < len(game.player.board)):
+            raise Exception("Invalid source index")
+        if not (0 <= target_index < len(game.enemy.board)):
+            raise Exception("Invalid target index")
+        # TODO(adamvenis): make sure you can't attack stealth,
+        # or nontaunt when taunt exists
+        ally_minion = game.player.board[source_index]
+        enemy_minion = game.enemy.board[target_index]
         
-        if valid_targets is not None and minion_id not in valid_targets:
-            print 'this is an invalid target for this action'
-            continue
+        if ally_minion.attacks_left <= 0:
+            raise Exception("This minion cannot attack")
+        if ally_minion.attack(game) <= 0:
+            raise Exception("This minion has no attack")
+        if 'Frozen' in ally_minion.mechanics or 'Thawing' in ally_minion.mechanics:
+            raise Exception("This minion is frozen, and cannot attack")
+        if 'Stealth' in enemy_minion.mechanics:
+            raise Exception("Cannot attack a minion with stealth")
+        if 'Taunt' not in enemy_minion.mechanics and any('Taunt' in minion.mechanics for minion in game.enemy.board[1:]):
+            raise Exception("Must target a minion with taunt")
+            
+        self.ally_id = ally_minion.minion_id
+        self.enemy_id = enemy_minion.minion_id
+        
+    def execute(self, game):
+        ally_minion = game.minion_pool[ally_id]
+        enemy_minion = game.minion_pool[enemy_id]
+
+        if ally_minion == ally_minion.owner.board[0] and game.player.weapon:
+            game.player.weapon.durability -= 1
+            if game.player.weapon.durability == 0:
+                game.player.weapon = None
+
+        if 'Stealth' in ally_minion.mechanics:
+            ally_minion.mechanics.remove('Stealth')
+
+        ally_minion.attacks_left -= 1
+
+        if 'Divine Shield' in enemy_minion.mechanics:
+            enemy_minion.mechanics.remove('Divine Shield')
         else:
-            game.logger.info('TARGET %d' % minion_id)
-            return minion_id
+            damage = ally_minion.attack(game)
+            if damage > 0:
+                game.action_queue.append(
+                    (deal_damage, (game, enemy_minion.minion_id, ally_minion.attack(game))))
+
+        if 'Divine Shield' in ally_minion.mechanics:
+            ally_minion.mechanics.remove('Divine Shield')
+        else:
+            damage = enemy_minion.attack(game)
+            if enemy_minion == enemy_minion.owner.board[0] and enemy_minion.owner.weapon is not None:
+                damage -= enemy_minion.owner.weapon.attack(game)
+            if damage > 0:
+                game.action_queue.append(
+                    (deal_damage, (game, ally_minion.minion_id, damage)))        
 
 
+class Cast(Action):
+
+    def __init__(self, game, action_string):
+        params = action_string.split()
+        if len(params) != 2:
+            raise Exception("CAST requires exactly one additional argument")
+        index = int(params[1])
+        if not (0 <= index < len(game.player.hand)):
+            raise Exception("Must CAST a valid index from your hand")
+        if not isinstance(player.hand[index], SpellCard):
+            raise Exception("Must CAST a Spell type card")
+        if game.player.hand[index].cost(game) > game.player.current_crystals:
+            raise Exception("Insufficient funds")
+        self.index = index
+        
+    def execute(self, game):
+        spell_card = game.player.hand[self.index]
+        game.player.current_crystals -= spell_card.cost(game)
+        del game.player.hand[index]
+        spell_effects.__dict__[name_to_func(spell_card.name)](game)
+
+
+#these lowercase functions are deprecated
 def summon(game, player, index):  # specifically for summoning from hand
-    game.logger.info('SUMMON %s %d' % ('P1' if player == game.player1 else 'P2', index))
+
     card = player.hand[index]
     player.current_crystals -= card.cost(game)
     del player.hand[index]
@@ -60,25 +136,7 @@ def summon(game, player, index):  # specifically for summoning from hand
     trigger_effects(game, ['battlecry', minion.minion_id])
 
 
-def spawn(game, player, card):  # equivalent of summon when not from hand
-    minion = Minion(game, card)
-    game.minion_pool[minion.minion_id] = minion
-    game.minion_counter += 1
-    player.board.append(minion)
-    if 'Charge' in minion.mechanics:
-        if 'Windfury' in minion.mechanics:
-            minion.attacks_left = 2
-        else:
-            minion.attacks_left = 1
-    if minion_effects.minion_effects.get(card.name):
-        game.effect_pool.append(
-            partial(minion_effects.minion_effects[card.name], id=minion.minion_id))
-    game.logger.info('SPAWN %s %s' % ('P1' if player == game.player1 else 'P2', minion.name))
-    return minion
-
-
 def attack(game, ally_id, enemy_id):
-    game.logger.info('ATTACK %s %s' % (ally_id, enemy_id))
     ally_minion = game.minion_pool[ally_id]
     enemy_minion = game.minion_pool[enemy_id]
 
@@ -111,35 +169,8 @@ def attack(game, ally_id, enemy_id):
                 (deal_damage, (game, ally_minion.minion_id, damage)))
 
 
-def deal_damage(game, minion_id, damage):
-    game.logger.info('DEAL_DAMAGE %d %d' % (minion_id, damage))
-    minion = game.minion_pool[minion_id]
-    player = minion.owner
-    if minion.name == 'hero' and damage < player.armor:
-        player.armor -= damage
-    elif game.minion_pool[minion_id].name == 'hero' and player.armor:
-        minion.current_health -= damage - player.armor
-        player.armor = 0
-    else:
-        minion.current_health -= damage
-
-    if minion.health(game) <= 0:
-        if minion.name == 'hero':
-            # equivalent to highest priority?
-            trigger_effects(game, ['kill_hero', player])
-        else:
-            game.action_queue.append((kill_minion, (game, minion_id)))
-
-
-def heal(game, minion_id, amount):
-    game.logger.info('HEAL %d %d' % (minion_id, amount))
-    minion = game.minion_pool[minion_id]
-    minion.current_health = min(
-        minion.current_health + amount, minion.max_health)
-
-
 def cast_spell(game, index):
-    game.logger.info('CAST %d' % index)
+    
     spell_card = game.player.hand[index]
     # assumes spells can only be played on your turn
     game.player.current_crystals -= spell_card.cost(game)
@@ -147,24 +178,8 @@ def cast_spell(game, index):
     spell_effects.__dict__[name_to_func(spell_card.name)](game)
 
 
-def silence(game, minion_id):  # removes effects and auras of a minion. or does it? (gurubashi)
-    game.logger.info('SILENCE %d' % minion_id)
-    minion = game.minion_pool[minion_id]
-    game.effect_pool = [effect for effect in game.effect_pool if effect.keywords.get('id') != minion_id]
-    minion.owner.auras = set(aura for aura in minion.owner.auras if aura.id != minion_id)
-
-
-def kill_minion(game, minion_id):
-    game.logger.info('KILL_MINION %d' % minion_id)    
-    minion = game.minion_pool[minion_id]
-    minion.owner.board.remove(minion)
-    minion.owner.auras = set(
-        aura for aura in minion.owner.auras if aura.id != minion_id)
-    del game.minion_pool[minion_id]
-
-
 def hero_power(game):
-    game.logger.info('HERO_POWER %s' % game.player.hero)    
+  
     if game.player.current_crystals < 2:
         print 'not enough mana!'
         return

@@ -7,7 +7,7 @@
 
 from json import loads
 from random import shuffle
-import utils
+from card_types import MinionCard, SpellCard
 
 
 def get_all_cards():
@@ -30,13 +30,13 @@ def get_card(card_name, owner):
                 params['health'] = card.get('health')
                 params['mechanics'] = card.get('mechanics', [])
                 params['race'] = card.get('race')
-                return utils.MinionCard(**params)
+                return MinionCard(**params)
             elif card.get('type') == 'Spell':
-                return utils.SpellCard(**params)
+                return SpellCard(**params)
             elif card.get('type') == 'Weapon':
                 params['attack'] = card.get('attack')
                 params['durability'] = card.get('durability')
-                return utils.WeaponCard(**params)
+                return WeaponCard(**params)
     print 'ERROR: CARD NOT FOUND'
 
 
