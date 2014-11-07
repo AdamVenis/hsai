@@ -10,13 +10,22 @@ class Action():
 
 
 class End(Action):
-    def __init__(self, action_string):
+    def __init__(self):
         #TODO validation that the string is precisely "END"?
         pass
     
     def execute(self, game):
-        #TODO wtf to do here?
+        game.logger.info('END_TURN')
+        trigger_effects(game, ['end_turn', player])
+        game.turn += 1
+
+
+class Concede(Action):
+    def __init__(self):
         pass
+
+    def execute(self, game):
+        game.logger.info('CONCEDE %s' % game.player)
 
 
 class Summon(Action):
@@ -26,6 +35,7 @@ class Summon(Action):
             raise Exception("SUMMON requires exactly one additional argument")
         index = int(params[1])
         if not (0 <= index < len(game.player.hand)):
+            print index, game.player.hand
             raise Exception("Must SUMMON a valid index from your hand")
         if not isinstance(player.hand[index], MinionCard):
             raise Exception("Must SUMMON a Minion type card")
@@ -34,6 +44,7 @@ class Summon(Action):
         self.index = index
         
     def execute(self, game):
+        game.logger.info('SUMMON %d' % self.index)
         card = game.player.hand[index]
         game.player.current_crystals -= card.cost(game)
         del game.player.hand[index]
@@ -72,6 +83,7 @@ class Attack(Action):
         self.enemy_id = enemy_minion.minion_id
         
     def execute(self, game):
+        game.logger.info('ATTACK %d %d' % (self.ally_id, self.enemy_id))
         ally_minion = game.minion_pool[ally_id]
         enemy_minion = game.minion_pool[enemy_id]
 
@@ -120,6 +132,7 @@ class Cast(Action):
         self.index = index
         
     def execute(self, game):
+        game.logger.info('CAST %d' % self.index)
         spell_card = game.player.hand[self.index]
         game.player.current_crystals -= spell_card.cost(game)
         del game.player.hand[index]

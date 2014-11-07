@@ -10,15 +10,16 @@ import spell_effects
 import logging
 from card_types import MinionCard, SpellCard
 from time import strftime, gmtime
+import json
 
 def mulligan(game, player):
     hand_size = 3 if player == game.player else 4
     shown_cards = player.deck[:hand_size]
     print 'Your cards are %s' % shown_cards
     mulligans = raw_input('Indicate which cards you want shuffled back by typing space delimited indices.')
-    while not all(0 <= i < len(shown_cards) for i in map(int, mulligans.split(' '))):
+    while not all(0 <= i < len(shown_cards) for i in map(int, mulligans.split())):
         mulligans = raw_input('Invalid input! Try again.')
-    for i in map(int, mulligans.split(' ')):
+    for i in map(int, mulligans.split()):
         player.deck[i], player.deck[-i] = player.deck[-i], player.deck[i]
     return mulligans
         
@@ -42,14 +43,14 @@ def new_game():
         game.action_queue.append((events.draw, (game, game.player2,)))
     game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
-    pregame_data = {}
-    pregame_data['P1'] = {'hero': game.player1.hero,
+    pregame = {}
+    pregame['P1'] = {'hero': game.player1.hero,
                           'deck': [minion.name for minion in game.player1.deck], 
                           'kept': p1_mulligans}
-    pregame_data['P2'] = {'hero': game.player2.hero,
+    pregame['P2'] = {'hero': game.player2.hero,
                           'deck': [minion.name for minion in game.player2.deck],
                           'kept': p2_mulligans}
-    game.logger.info('PREGAME %s' % pregame_data)  
+    game.logger.info(json.dumps(pregame))  
     
     for player in [game.player1, game.player2]:
         events.spawn(game, player, MinionCard(name='Dummy', neutral_cost=None, attack=0,
@@ -66,7 +67,10 @@ def parse_move(game, input):
         return Cast(game, input)
     elif input.startswith("END"):
         return End()
+    elif input.startswith("CONCEDE"):
+        return Concede()
     else:
+        print 'we lost boys'
         return Action() # wtf is this
 
 def get_logger():
@@ -80,14 +84,21 @@ def get_logger():
 def load(replay_file):
 
     with open(replay_file) as replay:
-        replay = json.loads(replay)
+        lines = replay.readlines()
+        pregame = json.loads(lines[0])
         
-        game = Game(replay['setup'][0]['hero'], replay['setup'][1]['hero'],
-            replay['setup'][0]['deck'], replay['setup'][1]['deck'], get_logger(), deque())        
-        
-        for action in replay['actions']:
+        game = Game(pregame['P1']['hero'], pregame['P2']['hero'], pregame['P1']['deck'],
+                pregame['P2']['deck'], get_logger(), deque())
+    
+        for i in range(3):
+            game.action_queue.append((events.draw, (game, game.player1,)))
+        for i in range(4):
+            game.action_queue.append((events.draw, (game, game.player2,)))
+        game.player2.hand.append(card_data.get_card('The Coin', game.player2))
+
+        for action in lines[1:]:
             if action.startswith('AUX'):
-                action = action.split(' ')
+                action = action.split()
                 if len(action) != 2:
                     raise Exception("MALFORMED REPLAY")
                 game.aux_vals.append(int(action[1]))
@@ -146,6 +157,7 @@ def play_out(game):
             if len(action) < 1:
                 print 'unable to parse action'
             elif action[0].lower() in ['end', 'end turn']:
+                game.logger.info('END_TURN')
                 trigger_effects(game, ['end_turn', player])
                 game.turn += 1
                 break
@@ -169,7 +181,7 @@ def play_out(game):
                     elif player.hand[index].cost(game) > player.current_crystals:
                         print 'not enough crystals! need %s' % str(player.hand[index].cost(game))
                     else:
-                        game.logger.info('SUMMON %s %d' % ('P1' if player == game.player1 else 'P2', index))
+                        game.logger.info('SUMMON %d' % index)
                         game.action_queue.append(
                             (summon, (game, player, index)))
             elif action[0].lower() == 'cast':
@@ -228,4 +240,4 @@ def play_out(game):
             print "Player 1 wins!"
             break
 
-new_game()  # for debugging, just so it autoruns
+#new_game()  # for debugging, just so it autoruns
