@@ -239,3 +239,22 @@ def opponent(game, player):
         return game.enemy
     else:
         return game.player
+
+
+def lazy(original_class):
+    orig_init = original_class.__init__
+    orig_execute = original_class.execute
+    
+    def __init__(self, *args):
+        self.is_init = False
+        self.init_args = args
+
+    def execute(self, game):
+        if not self.is_init:
+            self.is_init = True
+            orig_init(self, *self.init_args)
+        orig_execute(self, game)
+    
+    original_class.__init__ = __init__
+    original_class.execute = execute
+    return original_class

@@ -71,6 +71,7 @@ def parse_move(game, input):
         return Concede()
     else:
         print 'we lost boys'
+        print input
         return Action() # wtf is this
 
 def get_logger():

@@ -27,7 +27,7 @@ class Concede(Action):
     def execute(self, game):
         game.logger.info('CONCEDE %s' % game.player)
 
-
+@lazy
 class Summon(Action):
     def __init__(self, game, action_string):
         params = action_string.split()
@@ -51,7 +51,7 @@ class Summon(Action):
         minion = spawn(game, game.player, card)
         trigger_effects(game, ['battlecry', minion.minion_id])
 
-
+@lazy
 class Attack(Action):
     def __init__(self, game, action_string):
         params = action_string.split()
@@ -115,7 +115,7 @@ class Attack(Action):
                 game.action_queue.append(
                     (deal_damage, (game, ally_minion.minion_id, damage)))        
 
-
+@lazy
 class Cast(Action):
 
     def __init__(self, game, action_string):
