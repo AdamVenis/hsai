@@ -6,7 +6,6 @@
 # Poisonous, Spellpower
 
 from json import loads
-from random import shuffle
 from card_types import MinionCard, SpellCard
 
 
@@ -41,6 +40,4 @@ def get_card(card_name, owner):
 
 
 def get_deck(names, owner):
-    deck = [get_card(name, owner) for name in names]
-    shuffle(deck)  # LOL
-    return deck
+    return [get_card(name, owner) for name in names]

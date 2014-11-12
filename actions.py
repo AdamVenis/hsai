@@ -1,5 +1,6 @@
 from utils import *
 from events import deal_damage, draw, heal, spawn, target
+from card_types import MinionCard, SpellCard, WeaponCard
 import minion_effects
 import spell_effects
 import card_data
@@ -16,7 +17,7 @@ class End(Action):
     
     def execute(self, game):
         game.logger.info('END_TURN')
-        trigger_effects(game, ['end_turn', player])
+        trigger_effects(game, ['end_turn', game.player])
         game.turn += 1
 
 
@@ -25,7 +26,7 @@ class Concede(Action):
         pass
 
     def execute(self, game):
-        game.logger.info('CONCEDE %s' % game.player)
+        game.logger.info('WINNER: %s' % 'P2' if game.player == game.player1 else 'P1')
 
 @lazy
 class Summon(Action):
@@ -35,9 +36,8 @@ class Summon(Action):
             raise Exception("SUMMON requires exactly one additional argument")
         index = int(params[1])
         if not (0 <= index < len(game.player.hand)):
-            print index, game.player.hand
             raise Exception("Must SUMMON a valid index from your hand")
-        if not isinstance(player.hand[index], MinionCard):
+        if not isinstance(game.player.hand[index], MinionCard):
             raise Exception("Must SUMMON a Minion type card")
         if game.player.hand[index].cost(game) > game.player.current_crystals:
             raise Exception("Insufficient funds")
@@ -45,9 +45,9 @@ class Summon(Action):
         
     def execute(self, game):
         game.logger.info('SUMMON %d' % self.index)
-        card = game.player.hand[index]
+        card = game.player.hand[self.index]
         game.player.current_crystals -= card.cost(game)
-        del game.player.hand[index]
+        del game.player.hand[self.index]
         minion = spawn(game, game.player, card)
         trigger_effects(game, ['battlecry', minion.minion_id])
 
@@ -84,8 +84,8 @@ class Attack(Action):
         
     def execute(self, game):
         game.logger.info('ATTACK %d %d' % (self.ally_id, self.enemy_id))
-        ally_minion = game.minion_pool[ally_id]
-        enemy_minion = game.minion_pool[enemy_id]
+        ally_minion = game.minion_pool[self.ally_id]
+        enemy_minion = game.minion_pool[self.enemy_id]
 
         if ally_minion == ally_minion.owner.board[0] and game.player.weapon:
             game.player.weapon.durability -= 1
@@ -123,9 +123,10 @@ class Cast(Action):
         if len(params) != 2:
             raise Exception("CAST requires exactly one additional argument")
         index = int(params[1])
+        print game.player.hand, index
         if not (0 <= index < len(game.player.hand)):
             raise Exception("Must CAST a valid index from your hand")
-        if not isinstance(player.hand[index], SpellCard):
+        if not isinstance(game.player.hand[index], SpellCard):
             raise Exception("Must CAST a Spell type card")
         if game.player.hand[index].cost(game) > game.player.current_crystals:
             raise Exception("Insufficient funds")
@@ -135,10 +136,17 @@ class Cast(Action):
         game.logger.info('CAST %d' % self.index)
         spell_card = game.player.hand[self.index]
         game.player.current_crystals -= spell_card.cost(game)
-        del game.player.hand[index]
+        del game.player.hand[self.index]
         spell_effects.__dict__[name_to_func(spell_card.name)](game)
 
 
+class HeroPower(Action):
+    def __init__(self, game):
+        pass
+
+    def execute(self, game):
+        hero_power(game) # TODO: inline this
+        
 #these lowercase functions are deprecated
 def summon(game, player, index):  # specifically for summoning from hand
 

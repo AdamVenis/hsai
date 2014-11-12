@@ -11,6 +11,7 @@ import logging
 from card_types import MinionCard, SpellCard
 from time import strftime, gmtime
 import json
+from random import shuffle
 
 def mulligan(game, player):
     hand_size = 3 if player == game.player else 4
@@ -22,7 +23,8 @@ def mulligan(game, player):
     for i in map(int, mulligans.split()):
         player.deck[i], player.deck[-i] = player.deck[-i], player.deck[i]
     return mulligans
-        
+
+    
 def new_game():
 
     print choice(['Take a seat by the hearth!', 'Welcome back!', "Busy night! But there's always room for another!"])
@@ -34,6 +36,8 @@ def new_game():
 
     print '%s versus %s!' % tuple(heroes)
     game = Game(heroes[0], heroes[1], decks.default_mage, decks.default_mage, get_logger(), deque())   
+    shuffle(game.player1.deck)
+    shuffle(game.player2.deck)
     p1_mulligans = mulligan(game, game.player1)
     p2_mulligans = mulligan(game, game.player2)        
     
@@ -57,6 +61,7 @@ def new_game():
                                                health=30, mechanics={}, race=None, owner=player, card_id=None))
 
     play_out(game)
+
     
 def parse_move(game, input):
     if input.startswith("SUMMON"):
@@ -65,6 +70,8 @@ def parse_move(game, input):
         return Attack(game, input)
     elif input.startswith("CAST"):
         return Cast(game, input)
+    elif input.startswith("HERO"):
+        return HeroPower(game)
     elif input.startswith("END"):
         return End()
     elif input.startswith("CONCEDE"):
@@ -74,6 +81,7 @@ def parse_move(game, input):
         print input
         return Action() # wtf is this
 
+
 def get_logger():
     logger = logging.getLogger()
     time = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
@@ -81,6 +89,7 @@ def get_logger():
     logger.addHandler(log_file_handler)
     logger.setLevel(logging.INFO)
     return logger
+
 
 def load(replay_file):
 
@@ -90,13 +99,16 @@ def load(replay_file):
         
         game = Game(pregame['P1']['hero'], pregame['P2']['hero'], pregame['P1']['deck'],
                 pregame['P2']['deck'], get_logger(), deque())
-    
+
         for i in range(3):
             game.action_queue.append((events.draw, (game, game.player1,)))
         for i in range(4):
             game.action_queue.append((events.draw, (game, game.player2,)))
         game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
+        game.action_queue.append((parse_move(game, 'END_TURN').execute, (game,)))
+        game.action_queue.append((parse_move(game, 'END_TURN').execute, (game,)))
+        print game.player.deck, game.enemy.deck
         for action in lines[1:]:
             if action.startswith('AUX'):
                 action = action.split()
@@ -105,7 +117,11 @@ def load(replay_file):
                 game.aux_vals.append(int(action[1]))
             else:
                 game.action_queue.append((parse_move(game, action).execute, (game,)))                
-        
+
+        for player in [game.player1, game.player2]:
+            events.spawn(game, player, MinionCard(name='Dummy', neutral_cost=None, attack=0,
+                                                   health=30, mechanics={}, race=None, owner=player, card_id=None))
+
         play_out(game)
     print 'how could we ever get here?'
 
@@ -144,8 +160,8 @@ def play_out(game):
                 break
 
             if game.action_queue:  # performs any outstanding action
-                action = game.action_queue.popleft()
-                print action[0].__name__, list(action[1][1:])
+                action = game.action_queue.popleft() #TODO: fix resolution order
+                print action[0], action[0].__name__, list(action[1][1:])
                 # [1:] 'game' gets cut out, as it's always the first parameter
                 trigger_effects(
                     game, [action[0].__name__] + list(action[1][1:]))
