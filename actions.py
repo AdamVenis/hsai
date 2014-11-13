@@ -19,6 +19,32 @@ class End(Action):
         game.logger.info('END_TURN')
         trigger_effects(game, ['end_turn', game.player])
         game.turn += 1
+        self.new_turn(game)
+
+    def new_turn(self, game):
+        if game.turn > 0:
+            game.enemy, game.player = game.player, game.enemy
+        # implicit reference for convenience
+        player = game.player
+        player.crystals = min(player.crystals + 1, 10)
+        player.current_crystals = player.crystals
+        game.action_queue.append((draw, (game, game.player,)))
+
+        print " \nIt is now Player %d's turn" % ((game.turn % 2) + 1)
+
+        for minion in player.board:
+            if 'Windfury' in minion.mechanics:
+                minion.attacks_left = 2
+            elif 'Frozen' in minion.mechanics:
+                minion.mechanics.remove('Frozen')
+                minion.mechanics.add('Thawing')
+            elif 'Thawing' in minion.mechanics:
+                minion.mechanics.remove('Thawing')
+            else:
+                minion.attacks_left = 1
+        player.can_hp = True
+
+        trigger_effects(game, ['start_turn', player])
 
 
 class Concede(Action):
@@ -157,9 +183,9 @@ def summon(game, player, index):  # specifically for summoning from hand
     trigger_effects(game, ['battlecry', minion.minion_id])
 
 
-def attack(game, ally_id, enemy_id):
-    ally_minion = game.minion_pool[ally_id]
-    enemy_minion = game.minion_pool[enemy_id]
+def attack(game, ally_index, enemy_index):
+    ally_minion = game.player.hand[ally_index]
+    enemy_minion = game.enemy.hand[enemy_index]
 
     if ally_minion == ally_minion.owner.board[0] and game.player.weapon:
         game.player.weapon.durability -= 1

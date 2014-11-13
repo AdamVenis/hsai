@@ -106,8 +106,8 @@ def load(replay_file):
             game.action_queue.append((events.draw, (game, game.player2,)))
         game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
-        game.action_queue.append((parse_move(game, 'END_TURN').execute, (game,)))
-        game.action_queue.append((parse_move(game, 'END_TURN').execute, (game,)))
+        #game.action_queue.append((parse_move(game, 'END_TURN').execute, (game,)))
+        #game.action_queue.append((parse_move(game, 'END_TURN').execute, (game,)))
         print game.player.deck, game.enemy.deck
         for action in lines[1:]:
             if action.startswith('AUX'):
@@ -160,6 +160,7 @@ def play_out(game):
                 break
 
             if game.action_queue:  # performs any outstanding action
+                display(game)
                 action = game.action_queue.popleft() #TODO: fix resolution order
                 print action[0], action[0].__name__, list(action[1][1:])
                 # [1:] 'game' gets cut out, as it's always the first parameter
@@ -230,10 +231,10 @@ def play_out(game):
                         if not validate_attack(game, action[1], action[2]):
                             continue
                         else:
-                            ally_id = game.player.board[action[1]].minion_id
-                            enemy_id = game.enemy.board[action[2]].minion_id
-                            game.logger.info('ATTACK %s %s' % (ally_id, enemy_id))
-                            game.action_queue.append((attack, (game, ally_id, enemy_id)))
+                            ally_index = game.player.board[action[1]]
+                            enemy_index = game.enemy.board[action[2]]
+                            game.logger.info('ATTACK %s %s' % (ally_index, enemy_index))
+                            game.action_queue.append((attack, (game, ally_index, enemy_index)))
                     except ValueError:
                         print 'invalid input: parameters must be integers, was given strings'
             elif action[0].lower() == 'debug':
