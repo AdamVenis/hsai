@@ -1,5 +1,5 @@
 from utils import *
-from events import deal_damage, draw, heal, spawn, target
+from events import deal_damage, draw, heal, spawn, start_turn, target
 from card_types import MinionCard, SpellCard, WeaponCard
 import minion_effects
 import spell_effects
@@ -19,32 +19,8 @@ class End(Action):
         game.logger.info('END_TURN')
         trigger_effects(game, ['end_turn', game.player])
         game.turn += 1
-        self.new_turn(game)
-
-    def new_turn(self, game):
-        if game.turn > 0:
-            game.enemy, game.player = game.player, game.enemy
-        # implicit reference for convenience
-        player = game.player
-        player.crystals = min(player.crystals + 1, 10)
-        player.current_crystals = player.crystals
-        game.action_queue.append((draw, (game, game.player,)))
-
-        print " \nIt is now Player %d's turn" % ((game.turn % 2) + 1)
-
-        for minion in player.board:
-            if 'Windfury' in minion.mechanics:
-                minion.attacks_left = 2
-            elif 'Frozen' in minion.mechanics:
-                minion.mechanics.remove('Frozen')
-                minion.mechanics.add('Thawing')
-            elif 'Thawing' in minion.mechanics:
-                minion.mechanics.remove('Thawing')
-            else:
-                minion.attacks_left = 1
-        player.can_hp = True
-
-        trigger_effects(game, ['start_turn', player])
+        game.enemy, game.player = game.player, game.enemy        
+        start_turn(game)
 
 
 class Concede(Action):
@@ -79,34 +55,39 @@ class Summon(Action):
 
 @lazy
 class Attack(Action):
-    def __init__(self, game, action_string):
-        params = action_string.split()
-        if len(params) != 3:
-            raise Exception("ATTACK requires exactly two additional arguments")
-        source_index = int(params[1])
-        target_index = int(params[2])
-        if not (0 <= source_index < len(game.player.board)):
-            raise Exception("Invalid source index")
-        if not (0 <= target_index < len(game.enemy.board)):
-            raise Exception("Invalid target index")
-        # TODO(adamvenis): make sure you can't attack stealth,
-        # or nontaunt when taunt exists
-        ally_minion = game.player.board[source_index]
-        enemy_minion = game.enemy.board[target_index]
-        
-        if ally_minion.attacks_left <= 0:
-            raise Exception("This minion cannot attack")
-        if ally_minion.attack(game) <= 0:
-            raise Exception("This minion has no attack")
-        if 'Frozen' in ally_minion.mechanics or 'Thawing' in ally_minion.mechanics:
-            raise Exception("This minion is frozen, and cannot attack")
-        if 'Stealth' in enemy_minion.mechanics:
-            raise Exception("Cannot attack a minion with stealth")
-        if 'Taunt' not in enemy_minion.mechanics and any('Taunt' in minion.mechanics for minion in game.enemy.board[1:]):
-            raise Exception("Must target a minion with taunt")
+    # either action_string is supplied, or source_id and target_id are supplied
+    def __init__(self, game, action_string="", source_id=None, target_id=None):
+        if action_string:
+            params = action_string.split()
+            if len(params) != 3:
+                raise Exception("ATTACK requires exactly two additional arguments")
+            source_index = int(params[1])
+            target_index = int(params[2])
+            if not (0 <= source_index < len(game.player.board)):
+                raise Exception("Invalid source index")
+            if not (0 <= target_index < len(game.enemy.board)):
+                raise Exception("Invalid target index")
+            # TODO(adamvenis): make sure you can't attack stealth,
+            # or nontaunt when taunt exists
+            ally_minion = game.player.board[source_index]
+            enemy_minion = game.enemy.board[target_index]
             
-        self.ally_id = ally_minion.minion_id
-        self.enemy_id = enemy_minion.minion_id
+            if ally_minion.attacks_left <= 0:
+                raise Exception("This minion cannot attack")
+            if ally_minion.attack(game) <= 0:
+                raise Exception("This minion has no attack")
+            if 'Frozen' in ally_minion.mechanics or 'Thawing' in ally_minion.mechanics:
+                raise Exception("This minion is frozen, and cannot attack")
+            if 'Stealth' in enemy_minion.mechanics:
+                raise Exception("Cannot attack a minion with stealth")
+            if 'Taunt' not in enemy_minion.mechanics and any('Taunt' in minion.mechanics for minion in game.enemy.board[1:]):
+                raise Exception("Must target a minion with taunt")
+
+            self.ally_id = ally_minion.minion_id
+            self.enemy_id = enemy_minion.minion_id
+        else:
+            self.ally_id = source_id
+            self.enemy_id = target_id
         
     def execute(self, game):
         game.logger.info('ATTACK %d %d' % (self.ally_id, self.enemy_id))
@@ -128,18 +109,18 @@ class Attack(Action):
         else:
             damage = ally_minion.attack(game)
             if damage > 0:
-                game.action_queue.append(
-                    (deal_damage, (game, enemy_minion.minion_id, ally_minion.attack(game))))
+                game.action_queue.append((deal_damage, (game, self.enemy_id, damage)))
 
         if 'Divine Shield' in ally_minion.mechanics:
             ally_minion.mechanics.remove('Divine Shield')
         else:
             damage = enemy_minion.attack(game)
+            # TODO(adamvenis): is this check necessary? it claims that attacking into a hero with
+            # attack will cause your attacking minion to take damage
             if enemy_minion == enemy_minion.owner.board[0] and enemy_minion.owner.weapon is not None:
                 damage -= enemy_minion.owner.weapon.attack(game)
             if damage > 0:
-                game.action_queue.append(
-                    (deal_damage, (game, ally_minion.minion_id, damage)))        
+                game.action_queue.append((deal_damage, (game, self.ally_id, damage)))        
 
 @lazy
 class Cast(Action):
@@ -184,8 +165,8 @@ def summon(game, player, index):  # specifically for summoning from hand
 
 
 def attack(game, ally_index, enemy_index):
-    ally_minion = game.player.hand[ally_index]
-    enemy_minion = game.enemy.hand[enemy_index]
+    ally_minion = game.player.board[ally_index]
+    enemy_minion = game.enemy.board[enemy_index]
 
     if ally_minion == ally_minion.owner.board[0] and game.player.weapon:
         game.player.weapon.durability -= 1
@@ -248,7 +229,7 @@ def hero_power(game):
                 totems.remove(minion.name)
         if totems:  # not all have been removed
             game.action_queue.append(
-                (spawn, (game, game.player, card_data.get_card(choice(totems)))))
+                (spawn, (game, game.player, card_data.get_card(game.choice(totems, random=True), game.player))))
         else:
             print 'all totems have already been summoned!'
             return
@@ -256,7 +237,7 @@ def hero_power(game):
         target_id = target(game)
         game.action_queue.append((deal_damage, (game, target_id, 1)))
     elif h == 'warlock':
-        game.action_queue.append((deal_damage, (game, game.player, 0, 2)))
+        game.action_queue.append((deal_damage, (game, game.player.board[0].minion_id, 2)))
         game.action_queue.append((draw, (game, game.player)))
     elif h == 'rogue':
         game.player.weapon = Weapon(1, 2)

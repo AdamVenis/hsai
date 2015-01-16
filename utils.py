@@ -22,13 +22,31 @@ class Game():
         self.logger = logger
         self.aux_vals = aux_vals
         
+    def choice(self, lst, random=False):
+        if self.aux_vals:
+            return lst[aux_vals.pop()]
+        elif random:
+            return lst[randint(0, len(lst) - 1)]
+        else:
+            # TODO(adamvenis): add a pretty prompt here
+            return lst[input()]
+        
     def get_aux(self, size, random=False):
         if self.aux_vals:
             return aux_vals.pop()
         elif random:
-            return randint(size)
+            return randint(0, size)
         else:
             return target(game)
+
+    def resolve(self):
+        while self.action_queue:
+            display(self)
+            action = self.action_queue.popleft() #TODO(adamvenis): fix resolution order
+            print 'ACTION:', action[0].__name__, list(action[1][1:])
+            # [1:] 'game' gets cut out, as it's always the first parameter
+            trigger_effects(self, [action[0].__name__] + list(action[1][1:]))
+            action[0](*action[1])  # tuple with arguments in second slot        
 
 
 class Player():

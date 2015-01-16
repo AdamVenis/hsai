@@ -10,7 +10,7 @@ import utils
 def arcane_missiles(game):
     for i in range(3 + game.player.spellpower):
         game.action_queue.append(
-            (events.deal_damage, (game, utils.choice(game.enemy.board).minion_id, 1)))
+            (events.deal_damage, (game, game.choice(game.enemy.board, random = True).minion_id, 1)))
 
 
 def arcane_explosion(game):

@@ -67,7 +67,32 @@ def spawn(game, player, card):  # equivalent of summon when not from hand
             partial(minion_effects.minion_effects[card.name], id=minion.minion_id))
     return minion
 
+
+def start_turn(game):
     
+    # implicit reference for convenience
+    player = game.player
+    player.crystals = min(player.crystals + 1, 10)
+    player.current_crystals = player.crystals
+    game.action_queue.append((draw, (game, player)))
+
+    print " \nIt is now Player %d's turn" % ((game.turn % 2) + 1)
+
+    for minion in player.board:
+        if 'Windfury' in minion.mechanics:
+            minion.attacks_left = 2
+        elif 'Frozen' in minion.mechanics:
+            minion.mechanics.remove('Frozen')
+            minion.mechanics.add('Thawing')
+        elif 'Thawing' in minion.mechanics:
+            minion.mechanics.remove('Thawing')
+        else:
+            minion.attacks_left = 1
+    player.can_hp = True
+
+    trigger_effects(game, ['start_turn', player])    
+
+
 def target(game, valid_targets=None):
     print 'pick a target'
     while True:
