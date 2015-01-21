@@ -7,9 +7,7 @@ from actions import *
 import events
 import minion_effects
 import spell_effects
-import logging
 from card_types import MinionCard, SpellCard
-from time import strftime, gmtime
 import json
 from random import shuffle
 
@@ -35,7 +33,7 @@ def new_game():
             heroes[i] = raw_input('Not a valid hero! Choose again. ')
 
     print '%s versus %s!' % tuple(heroes)
-    game = Game(heroes[0], heroes[1], decks.default_mage, decks.default_mage, get_logger(), deque())   
+    game = Game(heroes[0], heroes[1], decks.default_mage, decks.default_mage)   
     shuffle(game.player1.deck)
     shuffle(game.player2.deck)
     p1_mulligans = mulligan(game, game.player1)
@@ -83,15 +81,6 @@ def parse_move(game, input):
         return Action() # wtf is this
 
 
-def get_logger():
-    logger = logging.getLogger()
-    time = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
-    log_file_handler = logging.FileHandler('%s.hsrep' % time)
-    logger.addHandler(log_file_handler)
-    logger.setLevel(logging.INFO)
-    return logger
-
-
 def load(replay_file):
 
     with open(replay_file) as replay:
@@ -99,7 +88,7 @@ def load(replay_file):
         pregame = json.loads(lines[0])
 
         game = Game(pregame['P1']['hero'], pregame['P2']['hero'], pregame['P1']['deck'],
-                pregame['P2']['deck'], get_logger(), deque())
+                pregame['P2']['deck'])
 
         for i in range(3):
             game.action_queue.append((events.draw, (game, game.player1,)))
@@ -113,6 +102,7 @@ def load(replay_file):
 
         events.start_turn(game)
 
+        moves = []
         for action in lines[1:]:
             action = action.lower()
             if action.startswith('aux'):
@@ -121,8 +111,11 @@ def load(replay_file):
                     raise Exception("MALFORMED REPLAY")
                 game.aux_vals.append(int(action[1]))
             else:
-                game.action_queue.append((parse_move(game, action).execute, (game,)))
-                game.resolve()
+                moves.append(action)
+                
+        for move in moves:            
+            game.action_queue.append((parse_move(game, move).execute, (game,)))
+            game.resolve()
 
         play_out(game)
     print 'how could we ever get here?' #answer: when the game ends, silly!

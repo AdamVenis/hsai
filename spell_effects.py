@@ -3,14 +3,14 @@
 import actions
 # can't import * from here cause locals() is used below, and it needs to
 # be kept clean
+import card_data
 import events
 import utils
-
 
 def arcane_missiles(game):
     for i in range(3 + game.player.spellpower):
         game.action_queue.append(
-            (events.deal_damage, (game, game.choice(game.enemy.board, random = True).minion_id, 1)))
+            (events.deal_damage, (game, game.choice([m.minion_id for m in game.enemy.board], random = True), 1)))
 
 
 def arcane_explosion(game):
@@ -35,14 +35,14 @@ def polymorph(game):  # TODO: this needs validation (cannot target heroes)
             [minion.minion_id for minion in game.enemy.board[1:]])
     events.silence(game, target_id)
     minion = game.minion_pool[target_id]
-    chicken = utils.Minion(game, card_data.get_card('Chicken'))
+    chicken = utils.Minion(game, card_data.get_card('Chicken', game.player))
     minion.transform_into(chicken)
 
 
 def the_coin(game):
-    game.player.current_crystals += 1  # should this be capped at 10?
+    game.player.current_crystals = min(game.player.current_crystals + 1, 10)
 
-exceptions = ['actions', 'utils', 'exceptions', 'hunters_mark']
+exceptions = ['actions', 'card_data', 'events', 'utils', 'exceptions', 'hunters_mark']
 spell_effects = {utils.func_to_name(key): val for key, val in locals(
 ).items() if key[0] != '_' and key not in exceptions}
 # spell_effects["Hunter's Mark"] = hunters_mark # this is an example of

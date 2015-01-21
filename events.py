@@ -94,6 +94,10 @@ def start_turn(game):
 
 
 def target(game, valid_targets=None):
+
+    if game.aux_vals: # loading from replay
+        return game.aux_vals.popleft()
+
     print 'pick a target'
     while True:
         user_input = raw_input().split(' ')
@@ -122,5 +126,6 @@ def target(game, valid_targets=None):
             print 'this is an invalid target for this action'
             continue
         else:
+            game.logger.info('AUX %d' % minion_id)
             return minion_id
 

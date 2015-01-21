@@ -1,10 +1,12 @@
 from random import shuffle, randint, choice
 from collections import deque
 import card_data
+import logging
+from time import strftime, gmtime
 
 
 class Game():
-    def __init__(self, hero1, hero2, deck1, deck2, logger, aux_vals):
+    def __init__(self, hero1, hero2, deck1, deck2):
         # weirdly cyclic dependency with player, game and deck
         self.player1 = Player(hero=hero1, deck=None)
         self.player2 = Player(hero=hero2, deck=None)
@@ -19,25 +21,32 @@ class Game():
         self.action_queue = deque()
         self.minion_pool = {}
         self.minion_counter = 1000  # dummy value
-        self.logger = logger
-        self.aux_vals = aux_vals
+        self.logger = get_logger()
+        self.aux_vals = deque()
         
     def choice(self, lst, random=False):
+        rtn = None
         if self.aux_vals:
-            return lst[aux_vals.pop()]
+            rtn = self.aux_vals.popleft()
         elif random:
-            return lst[randint(0, len(lst) - 1)]
+            rtn = lst[randint(0, len(lst) - 1)]
         else:
             # TODO(adamvenis): add a pretty prompt here
-            return lst[input()]
+            rtn = lst[input()]
+        self.logger.info('AUX %d' % rtn)
+        return rtn
         
     def get_aux(self, size, random=False):
+        rtn = None
         if self.aux_vals:
-            return aux_vals.pop()
+            rtn = self.aux_vals.popleft()
         elif random:
-            return randint(0, size)
+            rtn = randint(0, size)
         else:
-            return target(game)
+            rtn = target(self)
+
+        self.logger.info('AUX %d' % rtn)
+        return rtn
 
     def resolve(self):
         while self.action_queue:
@@ -276,3 +285,12 @@ def lazy(original_class):
     original_class.__init__ = __init__
     original_class.execute = execute
     return original_class
+
+
+def get_logger():
+    logger = logging.getLogger()
+    time = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
+    log_file_handler = logging.FileHandler('%s.hsrep' % time)
+    logger.addHandler(log_file_handler)
+    logger.setLevel(logging.INFO)
+    return logger
