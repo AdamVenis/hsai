@@ -1,0 +1,39 @@
+{"P2": {"kept": "", "hero": "priest", "deck": ["Boulderfist Ogre", "Boulderfist Ogre", "Murloc Raider", "Arcane Explosion", "Arcane Intellect", "River Crocolisk", "Raid Leader", "Arcane Explosion", "Arcane Missiles", "Fireball", "Wolfrider", "Novice Engineer", "River Crocolisk", "Wolfrider", "Oasis Snapjaw", "Sen'jin Shieldmasta", "Bloodfen Raptor", "Murloc Raider", "Bloodfen Raptor", "Polymorph", "Arcane Missiles", "Fireball", "Nightblade", "Oasis Snapjaw", "Arcane Intellect", "Sen'jin Shieldmasta", "Novice Engineer", "Raid Leader", "Nightblade", "Polymorph"]}, "P1": {"kept": "", "hero": "mage", "deck": ["River Crocolisk", "Arcane Missiles", "Polymorph", "Wolfrider", "Arcane Explosion", "Raid Leader", "Bloodfen Raptor", "Novice Engineer", "Murloc Raider", "Nightblade", "Raid Leader", "Bloodfen Raptor", "Fireball", "Fireball", "Oasis Snapjaw", "Arcane Intellect", "River Crocolisk", "Oasis Snapjaw", "Sen'jin Shieldmasta", "Sen'jin Shieldmasta", "Boulderfist Ogre", "Novice Engineer", "Nightblade", "Murloc Raider", "Arcane Intellect", "Arcane Explosion", "Arcane Missiles", "Polymorph", "Boulderfist Ogre", "Wolfrider"]}}
+END_TURN
+SUMMON 3
+END_TURN
+SUMMON 0
+END_TURN
+ATTACK 1 0
+SUMMON 5
+END_TURN
+ATTACK 1 1
+CAST 0
+AUX 1001
+AUX 1001
+AUX 1001
+HERO_POWER mage
+AUX 1004
+END_TURN
+CAST 4
+ATTACK 1 0
+END_TURN
+CAST 0
+AUX 1004
+ATTACK 1 0
+END_TURN
+HERO_POWER priest
+AUX 1003
+CAST 6
+AUX 1003
+AUX 1003
+AUX 1003
+ATTACK 1 0
+END_TURN
+SUMMON 2
+SUMMON 2
+END_TURN
+CAST 0
+SUMMON 0
+ATTACK 1 2
+CONCEDE

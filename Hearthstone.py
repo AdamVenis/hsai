@@ -113,12 +113,15 @@ def load(replay_file):
             else:
                 moves.append(action)
                 
-        for move in moves:            
-            game.action_queue.append((parse_move(game, move).execute, (game,)))
+        for move in moves:
+            parsed_move = parse_move(game, move)
+            if isinstance(parsed_move, Concede):
+                return game
+            game.action_queue.append((parsed_move.execute, (game,)))
             game.resolve()
 
-        play_out(game)
-    print 'how could we ever get here?' #answer: when the game ends, silly!
+        return play_out(game)
+    print 'how could we ever get here?'
 
 
 def play_out(game):
@@ -131,15 +134,7 @@ def play_out(game):
         if game.player1.board[0].health(game) <= 0 or game.player2.board[0].health(game) <= 0:
             break
 
-        while game.action_queue:  # performs any outstanding action
-            display(game)
-            action = game.action_queue.popleft() # TODO(adamvenis): fix resolution order
-            print 'ACTION:', action[0].__name__, list(action[1][1:])
-            # [1:] 'game' gets cut out, as it's always the first parameter
-            trigger_effects(
-                game, [action[0].__name__] + list(action[1][1:]))
-            action[0](*action[1])  # tuple with arguments in second slot
-
+        game.resolve()
         display(game)
 
         action = raw_input().split()
@@ -220,5 +215,6 @@ def play_out(game):
         print "Player 2 wins!"
     elif game.player2.board[0].health(game) <= 0:
         print "Player 1 wins!"
+    return game # so the tests can verify the game state
 
 #new_game()  # for debugging, just so it autoruns
