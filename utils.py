@@ -83,6 +83,7 @@ class Player():
 class Minion():
     def __init__(self, game, card):
         self.name = card.name
+        self.game = game
         self.neutral_attack = card.attack
         self.current_attack = card.attack
         self.neutral_health = card.health
@@ -96,17 +97,18 @@ class Minion():
         game.minion_pool[self.minion_id] = self
         game.minion_counter += 1
 
-    def attack(self, game):  # TODO : add these to account for auras
+    @property
+    def attack(self):  # TODO : add these to account for auras
         rtn = self.current_attack
-        # this minion is a hero
-        if self.owner.board.index(self) == 0 and self.owner.weapon:
+        if self.name == 'Hero' and self.owner.weapon:
             rtn += self.owner.weapon.attack
-        rtn = apply_auras(game, self.owner, self, 'attack', rtn)
+        rtn = apply_auras(self.game, self.owner, self, 'attack', rtn)
         return rtn
 
-    def health(self, game):
+    @property
+    def health(self):
         rtn = self.current_health
-        rtn = apply_auras(game, self.owner, self, 'health', rtn)
+        rtn = apply_auras(self.game, self.owner, self, 'health', rtn)
         return rtn
 
     def transform_into(self, new_minion):
@@ -124,10 +126,12 @@ class Minion():
 
 
 class Weapon():
-    def __init__(self, attack, durability):
+    def __init__(self, game, attack, durability):
+        self.game = game
         self.current_attack = attack
         self.durability = durability
 
+    @property
     def attack(self, game):  # to make room for auras (aka for spiteful smith)
         rtn = self.current_attack
         return rtn
@@ -160,7 +164,7 @@ def validate_attack(game, player_ind, enemy_ind):
     if ally_minion.attacks_left <= 0:
         print 'this minion cannot attack'
         return False
-    elif ally_minion.attack(game) <= 0:
+    elif ally_minion.attack <= 0:
         print 'this minion has no attack'
         return False
     elif 'Frozen' in ally_minion.mechanics or 'Thawing' in ally_minion.mechanics:
@@ -206,11 +210,11 @@ def display(game):
 
     for minion in game.player1.board[1:]:
         player1_board_string[0].append('-' * (len(minion.name) + 2))
-        player1_board_string[2].append('|' + str(minion.attack(game))
+        player1_board_string[2].append('|' + str(minion.attack)
                                        + ' ' *
                                        (len(
-                                           minion.name) - len(str(minion.attack(game))) - len(str(minion.health(game))))
-                                       + str(minion.health(game)) + '|')
+                                           minion.name) - len(str(minion.attack)) - len(str(minion.health)))
+                                       + str(minion.health) + '|')
 
     player1_board_string[0] = ' '.join(player1_board_string[0])
     player1_board_string[2] = ' '.join(player1_board_string[2])
@@ -218,11 +222,11 @@ def display(game):
 
     for minion in game.player2.board[1:]:
         player2_board_string[0].append('-' * (len(minion.name) + 2))
-        player2_board_string[2].append('|' + str(minion.attack(game))
+        player2_board_string[2].append('|' + str(minion.attack)
                                        + ' ' *
                                        (len(
-                                           minion.name) - len(str(minion.attack(game))) - len(str(minion.health(game))))
-                                       + str(minion.health(game)) + '|')
+                                           minion.name) - len(str(minion.attack)) - len(str(minion.health)))
+                                       + str(minion.health) + '|')
 
     player2_board_string[0] = ' '.join(player2_board_string[0])
     player2_board_string[2] = ' '.join(player2_board_string[2])
@@ -230,14 +234,13 @@ def display(game):
 
     print '-' * 79
     print 'Player2 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
-          game.player2.hero, game.player2.current_crystals, game.player2.crystals, game.player2.board[
-              0].health(game),
+          game.player2.hero, game.player2.current_crystals, game.player2.crystals, game.player2.board[0].health,
           '' if game.player2.armor == 0 else ', Armor : ' +
         str(game.player2.armor),
           '' if game.player2.weapon == None else ', Weapon : ' +
-        str(game.player2.weapon.attack(game)) +
+        str(game.player2.weapon.attack) +
         '/' + str(game.player2.weapon.durability),
-          '' if game.player2.board[0].attack == 0 else ', Attack : ' + str(game.player2.board[0].attack(game)))
+          '' if game.player2.board[0].attack == 0 else ', Attack : ' + str(game.player2.board[0].attack))
     print 'Player2 Hand: %s' % ' | '.join(map(lambda x: x.name, game.player2.hand))
     for i in range(len(player2_board_string[0]) / 79 + 1):
         for j in player2_board_string:
@@ -247,14 +250,13 @@ def display(game):
             print j[i * 79:(i + 1) * 79]
     print 'Player1 Hand: %s' % ' | '.join(map(lambda x: x.name, game.player1.hand))
     print 'Player1 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
-          game.player1.hero, game.player1.current_crystals, game.player1.crystals, game.player1.board[
-              0].health(game),
+          game.player1.hero, game.player1.current_crystals, game.player1.crystals, game.player1.board[0].health,
           '' if game.player1.armor == 0 else ', Armor : ' +
         str(game.player1.armor),
           '' if game.player1.weapon == None else ', Weapon : ' +
-        str(game.player1.weapon.attack(game)) +
+        str(game.player1.weapon.attack) +
         '/' + str(game.player1.weapon.durability),
-          '' if game.player1.board[0].attack == 0 else ', Attack : ' + str(game.player1.board[0].attack(game)))
+          '' if game.player1.board[0].attack == 0 else ', Attack : ' + str(game.player1.board[0].attack))
 
 
 def trigger_effects(game, trigger):

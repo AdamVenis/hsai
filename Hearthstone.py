@@ -45,17 +45,17 @@ def new_game():
         game.action_queue.append((events.draw, (game, game.player2,)))
     game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
-    pregame = {}
-    pregame['P1'] = {'hero': game.player1.hero,
+    pregame_logs = {}
+    pregame_logs['P1'] = {'hero': game.player1.hero,
                           'deck': [minion.name for minion in game.player1.deck], 
                           'kept': p1_mulligans}
-    pregame['P2'] = {'hero': game.player2.hero,
+    pregame_logs['P2'] = {'hero': game.player2.hero,
                           'deck': [minion.name for minion in game.player2.deck],
                           'kept': p2_mulligans}
-    game.logger.info(json.dumps(pregame))  
+    game.logger.info(json.dumps(pregame_logs))  
     
     for player in [game.player1, game.player2]:
-        events.spawn(game, player, MinionCard(name='Dummy', neutral_cost=None, attack=0,
+        events.spawn(game, player, MinionCard(name='Hero', neutral_cost=None, attack=0,
                                                health=30, mechanics={}, race=None, owner=player, card_id=None))
 
     events.start_turn(game)
@@ -97,7 +97,7 @@ def load(replay_file):
         game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
         for player in [game.player1, game.player2]:
-            events.spawn(game, player, MinionCard(name='Dummy', neutral_cost=None, attack=0,
+            events.spawn(game, player, MinionCard(name='Hero', neutral_cost=None, attack=0,
                                                    health=30, mechanics={}, race=None, owner=player, card_id=None))
 
         events.start_turn(game)
@@ -131,7 +131,7 @@ def play_out(game):
         player = game.player
 
         # TODO(adamvenis): turn this into a triggered effect?
-        if game.player1.board[0].health(game) <= 0 or game.player2.board[0].health(game) <= 0:
+        if game.player1.board[0].health <= 0 or game.player2.board[0].health <= 0:
             break
 
         game.resolve()
@@ -209,12 +209,12 @@ def play_out(game):
         else:
             print 'unrecognized action'
 
-    if game.player1.board[0].health(game) <= 0 and game.player2.board[0].health(game) <= 0:
+    if game.player1.board[0].health <= 0 and game.player2.board[0].health <= 0:
         print "It's a draw!"
-    elif game.player1.board[0].health(game) <= 0:
+    elif game.player1.board[0].health <= 0:
         print "Player 2 wins!"
-    elif game.player2.board[0].health(game) <= 0:
+    elif game.player2.board[0].health <= 0:
         print "Player 1 wins!"
     return game # so the tests can verify the game state
 
-#new_game()  # for debugging, just so it autoruns
+# new_game()  # for debugging, just so it autoruns

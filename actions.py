@@ -74,7 +74,7 @@ class Attack(Action):
             
             if ally_minion.attacks_left <= 0:
                 raise Exception("This minion cannot attack")
-            if ally_minion.attack(game) <= 0:
+            if ally_minion.attack <= 0:
                 raise Exception("This minion has no attack")
             if 'Frozen' in ally_minion.mechanics or 'Thawing' in ally_minion.mechanics:
                 raise Exception("This minion is frozen, and cannot attack")
@@ -107,18 +107,18 @@ class Attack(Action):
         if 'Divine Shield' in enemy_minion.mechanics:
             enemy_minion.mechanics.remove('Divine Shield')
         else:
-            damage = ally_minion.attack(game)
+            damage = ally_minion.attack
             if damage > 0:
                 game.action_queue.append((deal_damage, (game, self.enemy_id, damage)))
 
         if 'Divine Shield' in ally_minion.mechanics:
             ally_minion.mechanics.remove('Divine Shield')
         else:
-            damage = enemy_minion.attack(game)
+            damage = enemy_minion.attack
             # TODO(adamvenis): is this check necessary? it claims that attacking into a hero with
             # attack will cause your attacking minion to take damage
             if enemy_minion == enemy_minion.owner.board[0] and enemy_minion.owner.weapon is not None:
-                damage -= enemy_minion.owner.weapon.attack(game)
+                damage -= enemy_minion.owner.weapon.attack
             if damage > 0:
                 game.action_queue.append((deal_damage, (game, self.ally_id, damage)))        
 
@@ -181,17 +181,17 @@ def attack(game, ally_index, enemy_index):
     if 'Divine Shield' in enemy_minion.mechanics:
         enemy_minion.mechanics.remove('Divine Shield')
     else:
-        damage = ally_minion.attack(game)
+        damage = ally_minion.attack
         if damage > 0:
             game.action_queue.append(
-                (deal_damage, (game, enemy_minion.minion_id, ally_minion.attack(game))))
+                (deal_damage, (game, enemy_minion.minion_id, ally_minion.attack)))
 
     if 'Divine Shield' in ally_minion.mechanics:
         ally_minion.mechanics.remove('Divine Shield')
     else:
-        damage = enemy_minion.attack(game)
+        damage = enemy_minion.attack
         if enemy_minion == enemy_minion.owner.board[0] and enemy_minion.owner.weapon is not None:
-            damage -= enemy_minion.owner.weapon.attack(game)
+            damage -= enemy_minion.owner.weapon.attack
         if damage > 0:
             game.action_queue.append(
                 (deal_damage, (game, ally_minion.minion_id, damage)))
@@ -240,7 +240,7 @@ def hero_power(game):
         game.action_queue.append((deal_damage, (game, game.player.board[0].minion_id, 2)))
         game.action_queue.append((draw, (game, game.player)))
     elif h == 'rogue':
-        game.player.weapon = Weapon(1, 2)
+        game.player.weapon = Weapon(game, 1, 2)
     elif h == 'priest':
         target_id = target(game)
         game.action_queue.append((heal, (game, target_id, 2)))

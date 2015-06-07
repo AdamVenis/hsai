@@ -13,7 +13,7 @@ def deal_damage(game, minion_id, damage):
     else:
         minion.current_health -= damage
 
-    if minion.health(game) <= 0:
+    if minion.health <= 0:
         if minion.name == 'hero':
             # equivalent to highest priority?
             trigger_effects(game, ['kill_hero', player])
