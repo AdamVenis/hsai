@@ -77,8 +77,8 @@ def parse_move(game, input):
     elif input.startswith("concede"):
         return Concede()
     else:
-        print 'we lost boys', input
-        return Action() # wtf is this
+        print 'invalid input ', input
+        return Action()
 
 
 def load(replay_file):
@@ -126,94 +126,39 @@ def load(replay_file):
 
 def play_out(game):
 
-    while True:  # loops through actions
-
+    while not game.winner:  # loops through actions
         player = game.player
 
         # TODO(adamvenis): turn this into a triggered effect?
-        if game.player1.board[0].health <= 0 or game.player2.board[0].health <= 0:
+        if game.player1.board[0].health <= 0 and game.player2.board[0].health <= 0:
+            game.winner = 3
+            break
+        elif game.player1.board[0].health <= 0:
+            game.winner = 2
+            break
+        elif game.player2.board[0].health <= 0:
+            game.winner = 1
             break
 
         game.resolve()
         display(game)
 
-        action = raw_input().split()
-        if len(action) < 1:
-            print 'unable to parse action'
-        elif action[0].lower() in ['end', 'end turn']:
-            End().execute(game)
-        elif action[0].lower() == 'hero' and action[1].lower() == 'power':
-            game.logger.info('HERO_POWER %s' % game.player.hero)  
-            hero_power(game)
-        elif action[0].lower() == 'summon':
-            if len(action) != 2:
-                print 'incorrect number of arguments: needs exactly 2'
-            else:
-                try:
-                    index = int(action[1])
-                except ValueError:
-                    print 'invalid input: parameter must be integer, was given string'
-                    continue
-                if index not in range(len(player.hand)):
-                    print 'invalid index'
-                # this doesn't account for minion/spell name conflicts
-                elif not isinstance(player.hand[index], MinionCard):
-                    print 'this card is not a minion and cannot be summoned'
-                elif player.hand[index].cost(game) > player.current_crystals:
-                    print 'not enough crystals! need %s' % str(player.hand[index].cost(game))
-                else:
-                    game.logger.info('SUMMON %d' % index)
-                    game.action_queue.append(
-                        (summon, (game, player, index)))
-        elif action[0].lower() == 'cast':
-            if len(action) != 2:
-                print 'incorrect number of arguments: needs exactly 2'
-            else:
-                try:
-                    index = int(action[1])
-                except ValueError as e:
-                    print 'invalid input: parameters must be integers, was given strings'
-                    print e
-                    continue
-                if index not in range(len(player.hand)):
-                    print 'invalid index'
-                elif not isinstance(player.hand[index], SpellCard):
-                    print 'this card is not a spell and cannot be cast'
-                elif player.hand[index].cost(game) > player.current_crystals:
-                    print 'not enough crystals! need %s' % str(player.hand[index].cost(game))
-                else:
-                    game.logger.info('CAST %d' % index)
-                    game.action_queue.append(
-                        (cast_spell, (game, index)))
-        elif action[0].lower() == 'attack':
-            if len(action) != 3:
-                print 'incorrect number of arguments: needs exactly 3'
-            else:
-                try:
-                    action[1], action[2] = int(action[1]), int(action[2])
-                    if not validate_attack(game, action[1], action[2]):
-                        continue
-                    else:
-                        game.logger.info('ATTACK %s %s' % (action[1], action[2]))
-                        game.action_queue.append((attack, (game, action[1], action[2])))
-                except ValueError:
-                    print 'invalid input: parameters must be integers, was given strings'
-        elif action[0].lower() == 'debug':
-            print 'effects: %s' % ['%s:%s' % (effect.func.__name, effect.keywords) for effect in game.effect_pool]
-            print 'actions: %s' % game.action_queue
-            print 'minion ids: %s' % game.minion_pool.keys()
-        elif action[0].lower() == 'concede':
-            game.logger.info('CONCEDE %s' % ('P1' if player == game.player1 else 'P2'))
-            game.player.board[0].current_health = 0
-            break
-        else:
-            print 'unrecognized action'
+        while True:
+            try:
+                action = parse_move(game, raw_input())
+                action.execute(game)
+                break
+            except Exception as e:
+                print e
 
-    if game.player1.board[0].health <= 0 and game.player2.board[0].health <= 0:
+        if isinstance(action, Concede):
+            break
+
+    if game.winner == 3:
         print "It's a draw!"
-    elif game.player1.board[0].health <= 0:
+    elif game.winner == 2:
         print "Player 2 wins!"
-    elif game.player2.board[0].health <= 0:
+    elif game.winner == 1:
         print "Player 1 wins!"
     return game # so the tests can verify the game state
 

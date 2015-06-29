@@ -1,4 +1,4 @@
-# work in progress
+# work in progress, currently unused
 
 def hunter(game):
    game.action_queue.append((deal_damage, (game, game.enemy.board[0].minion_id, 2)))

@@ -12,7 +12,7 @@ class Action():
 
 class End(Action):
     def __init__(self):
-        #TODO validation that the string is precisely "END"?
+        # TODO validation that the string is precisely "END"?
         pass
     
     def execute(self, game):
@@ -29,6 +29,10 @@ class Concede(Action):
 
     def execute(self, game):
         game.logger.info('WINNER: %s' % 'P2' if game.player == game.player1 else 'P1')
+        if game.player == game.player1:
+            game.winner = 2
+        else:
+            game.winner = 1
 
 @lazy
 class Summon(Action):

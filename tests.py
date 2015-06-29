@@ -1,7 +1,7 @@
 from Hearthstone import *
 
 def test_hearthstone():
-    g = load('2015-01-21-09-14-36.hsrep')
+    g = load('replays/2015-01-21-09-14-36.hsrep')
     assert g.effect_pool == []
     assert g.minion_counter == 1009
     assert g.turn == 9

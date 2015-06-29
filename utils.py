@@ -23,6 +23,7 @@ class Game():
         self.minion_counter = 1000  # dummy value
         self.logger = get_logger()
         self.aux_vals = deque()
+        self.winner = 0 # 0 for no winner, 1 for P1 has won, 2 for P2, 3 for tie
         
     def choice(self, lst, random=False):
         rtn = None
