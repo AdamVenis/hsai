@@ -69,7 +69,7 @@ class Player():
         self.current_crystals = 0
         self.armor = 0
         self.weapon = None
-        self.auras = set([])
+        self.auras = set()
         self.spellpower = 0
         self.fatigue = 0
         self.can_hp = True

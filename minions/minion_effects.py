@@ -1,5 +1,6 @@
-# alphabetical order!
+# minions in alphabetical order please!
 
+minion_effects = {} # hack to avoid circular imports
 import actions
 import events
 import utils
@@ -115,7 +116,7 @@ def water_elemental(game, trigger, id):
         enemy.attacks_left = 0
         enemy.mechanics.add('Frozen')
 
-exceptions = ['actions', 'utils', 'exceptions', 'senjin_shieldmasta']
+exceptions = ['minion_effects', 'actions', 'utils', 'exceptions', 'senjin_shieldmasta']
 minion_effects = {utils.func_to_name(key): val for key, val in locals(
 ).items() if key[0] != '_' and key not in exceptions}
 # minion_effects["Sen'jin Shieldmasta"] = senjin_shieldmasta # this is an

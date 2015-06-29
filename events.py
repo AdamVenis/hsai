@@ -1,6 +1,6 @@
 from functools import partial
 from utils import Minion, is_int, trigger_effects
-import minion_effects
+import minions.minion_effects
 
 def deal_damage(game, minion_id, damage):
     minion = game.minion_pool[minion_id]
@@ -62,9 +62,9 @@ def spawn(game, player, card):  # equivalent of summon when not from hand
             minion.attacks_left = 2
         else:
             minion.attacks_left = 1
-    if minion_effects.minion_effects.get(card.name):
+    if minions.minion_effects.minion_effects.get(card.name):
         game.effect_pool.append(
-            partial(minion_effects.minion_effects[card.name], id=minion.minion_id))
+            partial(minions.minion_effects.minion_effects[card.name], id=minion.minion_id))
     return minion
 
 

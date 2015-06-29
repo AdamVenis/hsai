@@ -5,7 +5,7 @@ import card_data
 import decks
 from actions import *
 import events
-import minion_effects
+import minions.minion_effects
 import spell_effects
 from card_types import MinionCard, SpellCard
 import json
