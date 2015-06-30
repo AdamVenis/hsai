@@ -89,7 +89,7 @@ def loot_hoarder(game, trigger, id):
 
 def nightblade(game, trigger, id):
     if trigger[0] == 'battlecry' and trigger[1] == id:
-        game.action_queue.append((deal_damage, (game, utils.opponent(
+        game.action_queue.append((events.deal_damage, (game, utils.opponent(
             game, game.minion_pool[id].owner).board[0].minion_id, 3)))
         return True
 
@@ -102,7 +102,11 @@ def novice_engineer(game, trigger, id):
 
 def raid_leader(game, trigger, id):
     def modifier(game, object, stat, value):
-        if isinstance(object, utils.Minion) and not utils.is_hero(object) and object != game.minion_pool[id] and object.owner == game.minion_pool[id].owner and stat == 'attack':
+        if (isinstance(object, utils.Minion) and
+                not utils.is_hero(object) and
+                object != game.minion_pool[id] and
+                object.owner == game.minion_pool[id].owner and
+                stat == 'attack'):
             return value + 1
         else:
             return value

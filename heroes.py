@@ -28,7 +28,7 @@ def shaman(game):
       id = target(game)
       game.action_queue.append((heal, (game, id, 2)))
    elif h == 'paladin':
-      game.action_queue.append((summon, (game, game.player, get_card('Silver Hand Recruit'))))
+      game.action_queue.append((spawn, (game, game.player, get_card('Silver Hand Recruit'))))
    elif h == 'druid':
       game.player.armor += 1
       game.player.board[0].attack += 1

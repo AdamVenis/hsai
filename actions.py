@@ -55,6 +55,7 @@ class Summon(Action):
         game.player.current_crystals -= card.cost(game)
         del game.player.hand[self.index]
         minion = spawn(game, game.player, card)
+        trigger_effects(game, ['summon', minion.minion_id])
         trigger_effects(game, ['battlecry', minion.minion_id])
 
 @lazy
@@ -95,6 +96,7 @@ class Attack(Action):
         
     def execute(self, game):
         game.logger.info('ATTACK %d %d' % (self.ally_id, self.enemy_id))
+        trigger_effects(game, ['attack', self.ally_id, self.enemy_id])
         ally_minion = game.minion_pool[self.ally_id]
         enemy_minion = game.minion_pool[self.enemy_id]
 
@@ -146,6 +148,7 @@ class Cast(Action):
     def execute(self, game):
         game.logger.info('CAST %d' % self.index)
         spell_card = game.player.hand[self.index]
+        trigger_effects(game, ['cast_spell', spell_card])
         game.player.current_crystals -= spell_card.cost(game)
         del game.player.hand[self.index]
         spell_effects.__dict__[name_to_func(spell_card.name)](game)
@@ -157,57 +160,6 @@ class HeroPower(Action):
 
     def execute(self, game):
         hero_power(game) # TODO: inline this
-        
-#these lowercase functions are deprecated
-def summon(game, player, index):  # specifically for summoning from hand
-
-    card = player.hand[index]
-    player.current_crystals -= card.cost(game)
-    del player.hand[index]
-    minion = spawn(game, player, card)
-    trigger_effects(game, ['battlecry', minion.minion_id])
-
-
-def attack(game, ally_index, enemy_index):
-    ally_minion = game.player.board[ally_index]
-    enemy_minion = game.enemy.board[enemy_index]
-
-    if ally_minion == ally_minion.owner.board[0] and game.player.weapon:
-        game.player.weapon.durability -= 1
-        if game.player.weapon.durability == 0:
-            game.player.weapon = None
-
-    if 'Stealth' in ally_minion.mechanics:
-        ally_minion.mechanics.remove('Stealth')
-
-    ally_minion.attacks_left -= 1
-
-    if 'Divine Shield' in enemy_minion.mechanics:
-        enemy_minion.mechanics.remove('Divine Shield')
-    else:
-        damage = ally_minion.attack
-        if damage > 0:
-            game.action_queue.append(
-                (deal_damage, (game, enemy_minion.minion_id, ally_minion.attack)))
-
-    if 'Divine Shield' in ally_minion.mechanics:
-        ally_minion.mechanics.remove('Divine Shield')
-    else:
-        damage = enemy_minion.attack
-        if enemy_minion == enemy_minion.owner.board[0] and enemy_minion.owner.weapon is not None:
-            damage -= enemy_minion.owner.weapon.attack
-        if damage > 0:
-            game.action_queue.append(
-                (deal_damage, (game, ally_minion.minion_id, damage)))
-
-
-def cast_spell(game, index):
-    
-    spell_card = game.player.hand[index]
-    # assumes spells can only be played on your turn
-    game.player.current_crystals -= spell_card.cost(game)
-    del game.player.hand[index]
-    spell_effects.__dict__[name_to_func(spell_card.name)](game)
 
 
 def hero_power(game):
@@ -250,7 +202,7 @@ def hero_power(game):
         game.action_queue.append((heal, (game, target_id, 2)))
     elif h == 'paladin':
         game.action_queue.append(
-            (summon, (game, game.player, card_data.get_card('Silver Hand Recruit'))))
+            (spawn, (game, game.player, card_data.get_card('Silver Hand Recruit'))))
     elif h == 'druid':
         game.player.armor += 1
         game.player.board[0].attack += 1

@@ -23,7 +23,7 @@ class Game():
         self.minion_counter = 1000  # dummy value
         self.logger = get_logger()
         self.aux_vals = deque()
-        self.winner = 0 # 0 for no winner, 1 for P1 has won, 2 for P2, 3 for tie
+        self.winner = 0 # 0 for no winner yet, 1 for P1 has won, 2 for P2, 3 for tie
         
     def choice(self, lst, random=False):
         rtn = None
@@ -125,6 +125,9 @@ class Minion():
     def __repr__(self):
         return self.name
 
+    def __str__(self):
+        return self.name
+
 
 class Weapon():
     def __init__(self, game, attack, durability):
@@ -136,6 +139,9 @@ class Weapon():
     def attack(self, game):  # to make room for auras (aka for spiteful smith)
         rtn = self.current_attack
         return rtn
+
+    def __str__(self):
+        return '%d/%d' % (self.current_attack, self.durability)
 
 
 class Aura():
@@ -203,18 +209,20 @@ def is_hero(minion):
 
 
 def display(game):
-    print game.minion_pool
-    player1_board_string = [[' ' * 9], 'P1 Board: %s' %
-                            ' '.join(map(lambda x:'|' + x.name + '|', game.player1.board[1:])), [' ' * 9]]
-    player2_board_string = [[' ' * 9], 'P2 Board: %s' %
-                            ' '.join(map(lambda x:'|' + x.name + '|', game.player2.board[1:])), [' ' * 9]]
+
+    player1_board_string = [[' ' * 9],
+                            'P1 Board: ' + ' '.join('|%s|' % m for m in game.player1.board[1:]),
+                            [' ' * 9]]
+    player2_board_string = [[' ' * 9],
+                            'P2 Board: ' + ' '.join('|%s|' % m for m in game.player2.board[1:]),
+                            [' ' * 9]]
 
     for minion in game.player1.board[1:]:
         player1_board_string[0].append('-' * (len(minion.name) + 2))
         player1_board_string[2].append('|' + str(minion.attack)
-                                       + ' ' *
-                                       (len(
-                                           minion.name) - len(str(minion.attack)) - len(str(minion.health)))
+                                       + ' ' * (len(minion.name)
+                                                - len(str(minion.attack))
+                                                - len(str(minion.health)))
                                        + str(minion.health) + '|')
 
     player1_board_string[0] = ' '.join(player1_board_string[0])
@@ -224,9 +232,9 @@ def display(game):
     for minion in game.player2.board[1:]:
         player2_board_string[0].append('-' * (len(minion.name) + 2))
         player2_board_string[2].append('|' + str(minion.attack)
-                                       + ' ' *
-                                       (len(
-                                           minion.name) - len(str(minion.attack)) - len(str(minion.health)))
+                                       + ' ' * (len(minion.name)
+                                                - len(str(minion.attack))
+                                                - len(str(minion.health)))
                                        + str(minion.health) + '|')
 
     player2_board_string[0] = ' '.join(player2_board_string[0])
@@ -235,29 +243,25 @@ def display(game):
 
     print '-' * 79
     print 'Player2 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
-          game.player2.hero, game.player2.current_crystals, game.player2.crystals, game.player2.board[0].health,
-          '' if game.player2.armor == 0 else ', Armor : ' +
-        str(game.player2.armor),
-          '' if game.player2.weapon == None else ', Weapon : ' +
-        str(game.player2.weapon.attack) +
-        '/' + str(game.player2.weapon.durability),
-          '' if game.player2.board[0].attack == 0 else ', Attack : ' + str(game.player2.board[0].attack))
-    print 'Player2 Hand: %s' % ' | '.join(map(lambda x: x.name, game.player2.hand))
+        game.player2.hero, game.player2.current_crystals, 
+        game.player2.crystals, game.player2.board[0].health,
+        '' if game.player2.armor == 0 else ', Armor : %d' % game.player2.armor,
+        '' if game.player2.weapon == None else ', Weapon : %s' % game.player2.weapon,
+        '' if game.player2.board[0].attack == 0 else ', Attack : %d' % game.player2.board[0].attack)
+    print 'Player2 Hand: ' + ' | '.join(minion.name for minion in game.player2.hand)
     for i in range(len(player2_board_string[0]) / 79 + 1):
         for j in player2_board_string:
             print j[i * 79:(i + 1) * 79]
     for i in range(len(player1_board_string[0]) / 79 + 1):
         for j in player1_board_string:
             print j[i * 79:(i + 1) * 79]
-    print 'Player1 Hand: %s' % ' | '.join(map(lambda x: x.name, game.player1.hand))
+    print 'Player1 Hand: ' + ' | '.join(minion.name for minion in game.player1.hand)
     print 'Player1 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
-          game.player1.hero, game.player1.current_crystals, game.player1.crystals, game.player1.board[0].health,
-          '' if game.player1.armor == 0 else ', Armor : ' +
-        str(game.player1.armor),
-          '' if game.player1.weapon == None else ', Weapon : ' +
-        str(game.player1.weapon.attack) +
-        '/' + str(game.player1.weapon.durability),
-          '' if game.player1.board[0].attack == 0 else ', Attack : ' + str(game.player1.board[0].attack))
+        game.player1.hero, game.player1.current_crystals,
+        game.player1.crystals, game.player1.board[0].health,
+        '' if game.player1.armor == 0 else ', Armor : %d' % game.player1.armor,
+        '' if game.player1.weapon == None else ', Weapon : %s' % game.player1.weapon,
+        '' if game.player1.board[0].attack == 0 else ', Attack : %d' % game.player1.board[0].attack)
 
 
 def trigger_effects(game, trigger):
@@ -293,7 +297,7 @@ def lazy(original_class):
 def get_logger():
     logger = logging.getLogger()
     time = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
-    log_file_handler = logging.FileHandler('%s.hsrep' % time)
+    log_file_handler = logging.FileHandler('replays/%s.hsrep' % time)
     logger.addHandler(log_file_handler)
     logger.setLevel(logging.INFO)
     return logger
