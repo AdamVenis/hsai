@@ -31,7 +31,8 @@ def fireball(game):
 
 
 def polymorph(game):  # TODO: this needs validation (cannot target heroes)
-    target_id = events.target(game, [minion.minion_id for minion in game.player.board[1:]] + 
+    target_id = events.target(game, 
+            [minion.minion_id for minion in game.player.board[1:]] + 
             [minion.minion_id for minion in game.enemy.board[1:]])
     events.silence(game, target_id)
     minion = game.minion_pool[target_id]

@@ -136,7 +136,6 @@ class Cast(Action):
         if len(params) != 2:
             raise Exception("CAST requires exactly one additional argument")
         index = int(params[1])
-        print game.player.hand, index
         if not (0 <= index < len(game.player.hand)):
             raise Exception("Must CAST a valid index from your hand")
         if not isinstance(game.player.hand[index], SpellCard):
@@ -162,8 +161,27 @@ class HeroPower(Action):
         hero_power(game) # TODO: inline this
 
 
+def parse_move(game, input):
+    input = input.lower()
+    if input.startswith("summon"):
+        return Summon(game, input)
+    elif input.startswith("attack"):
+        return Attack(game, input)
+    elif input.startswith("cast"):
+        return Cast(game, input)
+    elif input.startswith("hero"):
+        return HeroPower(game)
+    elif input.startswith("end"):
+        return End()
+    elif input.startswith("concede"):
+        return Concede()
+    else:
+        print 'invalid input ', input
+        return Action()
+
+
 def hero_power(game):
-  
+
     if game.player.current_crystals < 2:
         print 'not enough mana!'
         return

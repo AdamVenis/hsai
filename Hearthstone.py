@@ -8,6 +8,8 @@ import events
 import minions.minion_effects
 import spell_effects
 from card_types import MinionCard, SpellCard
+from human_agent import HumanAgent
+
 import json
 from random import shuffle
 
@@ -59,26 +61,7 @@ def new_game():
                                                health=30, mechanics={}, race=None, owner=player, card_id=None))
 
     events.start_turn(game)
-    play_out(game)
-
-
-def parse_move(game, input):
-    input = input.lower()
-    if input.startswith("summon"):
-        return Summon(game, input)
-    elif input.startswith("attack"):
-        return Attack(game, input)
-    elif input.startswith("cast"):
-        return Cast(game, input)
-    elif input.startswith("hero"):
-        return HeroPower(game)
-    elif input.startswith("end"):
-        return End()
-    elif input.startswith("concede"):
-        return Concede()
-    else:
-        print 'invalid input ', input
-        return Action()
+    play_out(game, HumanAgent(), HumanAgent())
 
 
 def load(replay_file):
@@ -87,8 +70,8 @@ def load(replay_file):
         lines = replay.readlines()
         pregame = json.loads(lines[0])
 
-        game = Game(pregame['P1']['hero'], pregame['P2']['hero'], pregame['P1']['deck'],
-                pregame['P2']['deck'])
+        game = Game(pregame['P1']['hero'], pregame['P2']['hero'],
+                    pregame['P1']['deck'], pregame['P2']['deck'])
 
         for i in range(3):
             game.action_queue.append((events.draw, (game, game.player1,)))
@@ -97,8 +80,9 @@ def load(replay_file):
         game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
         for player in [game.player1, game.player2]:
-            events.spawn(game, player, MinionCard(name='Hero', neutral_cost=None, attack=0,
-                                                   health=30, mechanics={}, race=None, owner=player, card_id=None))
+            events.spawn(game, player,
+                         MinionCard(name='Hero', neutral_cost=None, attack=0, health=30,
+                                    mechanics={}, race=None, owner=player, card_id=None))
 
         events.start_turn(game)
 
@@ -120,14 +104,15 @@ def load(replay_file):
             game.action_queue.append((parsed_move.execute, (game,)))
             game.resolve()
 
-        return play_out(game)
+        return play_out(game, HumanAgent(), HumanAgent())
     print 'how could we ever get here?'
 
 
-def play_out(game):
+def play_out(game, agent1, agent2):
 
     while not game.winner:  # loops through actions
         player = game.player
+        agent = agent1 if player == game.player1 else agent2
 
         # TODO(adamvenis): turn this into a triggered effect?
         if game.player1.board[0].health <= 0 and game.player2.board[0].health <= 0:
@@ -140,12 +125,11 @@ def play_out(game):
             game.winner = 1
             break
 
-        game.resolve()
-        display(game)
-
         while True:
             try:
-                action = parse_move(game, raw_input())
+                game.resolve()
+                display(game)
+                action = agent.move(game)
                 action.execute(game)
                 break
             except Exception as e:
@@ -161,5 +145,5 @@ def play_out(game):
     elif game.winner == 1:
         print "Player 1 wins!"
     return game # so the tests can verify the game state
-
+        
 # new_game()  # for debugging, just so it autoruns

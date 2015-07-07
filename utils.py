@@ -52,7 +52,7 @@ class Game():
     def resolve(self):
         while self.action_queue:
             display(self)
-            action = self.action_queue.popleft() #TODO(adamvenis): fix resolution order
+            action = self.action_queue.popleft() # TODO(adamvenis): fix resolution order
             print 'ACTION:', action[0].__name__, list(action[1][1:])
             # [1:] 'game' gets cut out, as it's always the first parameter
             trigger_effects(self, [action[0].__name__] + list(action[1][1:]))

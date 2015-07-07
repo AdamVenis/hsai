@@ -1,6 +1,6 @@
-import hsai.actions
-import hsai.events
-import hsai.utils
+import actions
+import events
+import utils
 
 def flame_leviathan(game, trigger, id):
     if trigger[0] == 'draw' and id in trigger[1:]:

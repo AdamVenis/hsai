@@ -48,6 +48,23 @@ def kill_minion(game, minion_id):
     del game.minion_pool[minion_id]
 
 
+def pick(game, options): # mostly for druid stuff
+
+    if game.aux_vals: # loading from replay
+        return game.aux_vals.popleft()
+
+    print 'Pick one of the following by typing the corresponding number:'
+    for i, option in enumerate(options):
+        print '%d : %s' % (i, option)
+    while True:
+        input = raw_input()
+        try:
+            int_input = int(input)
+            return int_input
+        except ValueError:
+            continue
+
+
 def silence(game, minion_id):  # removes effects and auras of a minion. or does it? (gurubashi)
     minion = game.minion_pool[minion_id]
     game.effect_pool = [effect for effect in game.effect_pool if effect.keywords.get('id') != minion_id]
@@ -93,7 +110,7 @@ def start_turn(game):
     trigger_effects(game, ['start_turn', player])    
 
 
-def target(game, valid_targets=None):
+def target(game, valid_targets=None): # TODO(adamvenis): make this agent specific
 
     if game.aux_vals: # loading from replay
         return game.aux_vals.popleft()
@@ -121,7 +138,7 @@ def target(game, valid_targets=None):
             minion_id = game.player.board[user_input[1]].minion_id
         else:
             minion_id = game.enemy.board[user_input[1]].minion_id
-        
+
         if valid_targets is not None and minion_id not in valid_targets:
             print 'this is an invalid target for this action'
             continue
