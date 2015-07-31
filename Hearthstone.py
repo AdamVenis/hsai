@@ -6,7 +6,7 @@ import decks
 from actions import *
 import events
 import minions.minion_effects
-import spell_effects
+import spells.spell_effects as spell_effects
 from card_types import MinionCard, SpellCard
 from human_agent import HumanAgent
 

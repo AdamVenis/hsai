@@ -2,7 +2,7 @@ from utils import *
 from events import deal_damage, draw, heal, spawn, start_turn, target
 from card_types import MinionCard, SpellCard, WeaponCard
 import minions.minion_effects
-import spell_effects
+import spells.spell_effects as spell_effects
 import card_data
 
 class Action():

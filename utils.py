@@ -56,7 +56,23 @@ class Game():
             print 'ACTION:', action[0].__name__, list(action[1][1:])
             # [1:] 'game' gets cut out, as it's always the first parameter
             trigger_effects(self, [action[0].__name__] + list(action[1][1:]))
-            action[0](*action[1])  # tuple with arguments in second slot        
+            action[0](*action[1])  # tuple with arguments in second slot
+
+    @property
+    def ALL_MINIONS(self):
+        return game.player.board[1:] + game.enemy.board[1:]
+
+    @property
+    def ALLY_MINIONS(self):
+        return game.player.board[1:]
+
+    @property
+    def ENEMY_MINIONS(self):
+        return game.enemy.board[1:]
+
+    @property
+    def ALL_CHARACTERS(self):
+        return game.player.board + game.enemy.board
 
 
 class Player():
@@ -151,6 +167,11 @@ class Aura():
         self.aux_vars = {}
 
 
+class Spell():
+	@staticmethod
+	def cast():
+		raise NotImplementedError("Subclasses should implement this!")
+
 def apply_auras(game, player, object, stat, value):
     for aura in player.auras:
         value = aura.modifier(game, object, stat, value)
@@ -187,8 +208,9 @@ def validate_attack(game, player_ind, enemy_ind):
 
 
 def func_to_name(s):
+    """some_function_name becomes Some Function Name"""
     s = s.split('_')
-    return ' '.join([word[0].upper() + word[1:] for word in s])
+    return ' '.join(word.capitalize() for word in s)
 
 
 def name_to_func(s):
@@ -205,7 +227,7 @@ def is_int(s):
 
 
 def is_hero(minion):
-    return minion.owner.board.index(minion) == 0
+    return minion == minion.owner.board[0]
 
 
 def display(game):
@@ -265,15 +287,10 @@ def display(game):
 
 
 def trigger_effects(game, trigger):
-    game.effect_pool = filter(lambda x: not x(game, trigger), game.effect_pool)
-
+	game.effect_pool = [effect for effect in game.effect_pool if not effect(game, trigger)]
 
 def opponent(game, player):
-    if player == game.player:
-        return game.enemy
-    else:
-        return game.player
-
+    return game.enemy if player == game.player else game.player
 
 def lazy(original_class):
     orig_init = original_class.__init__

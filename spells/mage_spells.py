@@ -1,8 +1,5 @@
-# NB: keep in alphabetical order
-
+# don't import * here so locals() stays clean
 import actions
-# can't import * from here cause locals() is used below, and it needs to
-# be kept clean
 import card_data
 import events
 import utils
@@ -31,20 +28,10 @@ def fireball(game):
 
 
 def polymorph(game):  # TODO: this needs validation (cannot target heroes)
-    target_id = events.target(game, 
+    target_id = events.target(game,
             [minion.minion_id for minion in game.player.board[1:]] + 
             [minion.minion_id for minion in game.enemy.board[1:]])
     events.silence(game, target_id)
     minion = game.minion_pool[target_id]
     chicken = utils.Minion(game, card_data.get_card('Chicken', game.player))
     minion.transform_into(chicken)
-
-
-def the_coin(game):
-    game.player.current_crystals = min(game.player.current_crystals + 1, 10)
-
-exceptions = ['actions', 'card_data', 'events', 'utils', 'exceptions', 'hunters_mark']
-spell_effects = {utils.func_to_name(key): val for key, val in locals(
-).items() if key[0] != '_' and key not in exceptions}
-# spell_effects["Hunter's Mark"] = hunters_mark # this is an example of
-# how exceptions work
