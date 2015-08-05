@@ -9,6 +9,7 @@ import events
 import utils
 
 from mage_spells import *
+from warrior_spells import *
 
 def the_coin(game):
     game.player.current_crystals = min(game.player.current_crystals + 1, 10)

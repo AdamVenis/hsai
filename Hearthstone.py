@@ -14,12 +14,14 @@ import json
 from random import shuffle
 
 def mulligan(game, player):
+
     hand_size = 3 if player == game.player else 4
     shown_cards = player.deck[:hand_size]
     print 'Your cards are %s' % shown_cards
     mulligans = raw_input('Indicate which cards you want shuffled back by typing space delimited indices.')
-    while not all(0 <= i < len(shown_cards) for i in map(int, mulligans.split())):
+    while not all(0 <= int(index) < len(shown_cards) for index in mulligans.split()):
         mulligans = raw_input('Invalid input! Try again.')
+    # TODO(adamvenis): bad logic, user could know where in the deck the shuffled cards went
     for i in map(int, mulligans.split()):
         player.deck[i], player.deck[-i] = player.deck[-i], player.deck[i]
     return mulligans
@@ -42,9 +44,9 @@ def new_game():
     p2_mulligans = mulligan(game, game.player2)        
     
     for i in range(3):
-        game.action_queue.append((events.draw, (game, game.player1,)))
+        game.add_event(events.draw, (game.player1,))
     for i in range(4):
-        game.action_queue.append((events.draw, (game, game.player2,)))
+        game.add_event(events.draw, (game.player2,))
     game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
     pregame_logs = {}
@@ -74,9 +76,9 @@ def load(replay_file):
                     pregame['P1']['deck'], pregame['P2']['deck'])
 
         for i in range(3):
-            game.action_queue.append((events.draw, (game, game.player1,)))
+            game.add_event(events.draw, (game.player1,))
         for i in range(4):
-            game.action_queue.append((events.draw, (game, game.player2,)))
+            game.add_event(events.draw, (game.player2,))
         game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
         for player in [game.player1, game.player2]:
@@ -101,7 +103,7 @@ def load(replay_file):
             parsed_move = parse_move(game, move)
             if isinstance(parsed_move, Concede):
                 return game
-            game.action_queue.append((parsed_move.execute, (game,)))
+            game.add_event(parsed_move.execute)
             game.resolve()
 
         return play_out(game, HumanAgent(), HumanAgent())

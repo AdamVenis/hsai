@@ -18,7 +18,7 @@ def deal_damage(game, minion_id, damage):
             # equivalent to highest priority?
             trigger_effects(game, ['kill_hero', player])
         else:
-            game.action_queue.append((kill_minion, (game, minion_id)))
+            game.add_event(kill_minion, (minion_id,))
 
 
 def draw(game, player):
@@ -66,7 +66,10 @@ def pick(game, options): # mostly for druid stuff
 
 
 def silence(game, minion_id):  # removes effects and auras of a minion. or does it? (gurubashi)
-    minion = game.minion_pool[minion_id]
+    try:
+        minion = game.minion_pool[minion_id]
+    except KeyError:
+        return
     game.effect_pool = [effect for effect in game.effect_pool if effect.keywords.get('id') != minion_id]
     minion.owner.auras = set(aura for aura in minion.owner.auras if aura.id != minion_id)
 
@@ -91,7 +94,7 @@ def start_turn(game):
     player = game.player
     player.crystals = min(player.crystals + 1, 10)
     player.current_crystals = player.crystals
-    game.action_queue.append((draw, (game, player)))
+    game.add_event(draw, (player,))
 
     print " \nIt is now Player %d's turn" % ((game.turn % 2) + 1)
 

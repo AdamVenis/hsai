@@ -5,10 +5,12 @@ import actions
 import events
 import utils
 
+from druid_minions import *
+from mage_minions import *
 
 def acolyte_of_pain(game, trigger, id):
     if trigger[0] == 'deal_damage' and trigger[1] == id:
-        game.action_queue.append((events.draw, (game.minion_pool[id].owner,)))
+        game.add_event(events.draw, (game.minion_pool[id].owner,))
 
 '''def amani_berserker(game, trigger, id): # this is probably wrong in conjunction with Auchenai Soulpriest
    minion = game.minion_pool[id]
@@ -25,19 +27,13 @@ def arcane_golem(game, trigger, id):
         return True
 
 
-def armorsmith(game, trigger, id):
-    if trigger[0] == 'deal_damage' and game.minion_pool[trigger[1]] in game.minion_pool[id].owner.board[1:]:
-        game.minion_pool[id].owner.armor += 1
-
-
 def cairne_bloodhoof(game, trigger, id):
     if trigger[0] == 'kill_minion' and trigger[1] == id:
-        game.action_queue.append(
-            (events.spawn, (game, game.minion_pool[id].owner, utils.get_card('Baine Bloodhoof'))))
+        game.add_event(events.spawn, (game.minion_pool[id].owner, utils.get_card('Baine Bloodhoof')))
         return True
 
 
-# hero power (TODO: this doesn't belong in this file)
+# hero power. TODO(adamvenis): this doesn't belong in this file)
 def druid(game, trigger, player):
     if trigger[0] == 'end_turn':
         game.player.board[0].attack -= 1
@@ -47,56 +43,53 @@ def druid(game, trigger, player):
 def earthen_ring_farseer(game, trigger, id):
     if trigger[0] == 'battlecry' and trigger[1] == id:
         target_id = events.target(game)
-        game.action_queue.append((events.heal, (game, target_id, 3)))
+        game.add_event(events.heal, (target_id, 3))
         return True
     return False
 
 
 def gnomish_inventor(game, trigger, id):
     if trigger[0] == 'battlecry' and trigger[1] == id:
-        game.action_queue.append((events.draw, (game, game.player,)))
+        game.add_event(events.draw, (game.player,))
         return True
 
 
 def harvest_golem(game, trigger, id):
     if trigger[0] == 'kill_minion' and trigger[1] == id:
-        game.action_queue.append(
-            (events.spawn, (game, game.minion_pool[id].owner, utils.get_card('Damaged Golem'))))
+        game.add_event(events.spawn, (game.minion_pool[id].owner, utils.get_card('Damaged Golem')))
         return True
 
 
 def healing_totem(game, trigger, id):
     if trigger[0] == 'end_turn' and game.minion_pool[id].owner == trigger[1]:
         for minion in game.minion_pool[id].owner.board[1:]:
-            game.action_queue.append(
-                (events.heal, (game, minion.minion_id, 1)))
+            game.add_event(events.heal, (minion.minion_id, 1))
 
 
 def leper_gnome(game, trigger, id):
     if trigger[0] == 'kill_minion' and trigger[1] == id:
-        game.action_queue.append((deal_damage, (game, utils.opponent(
-            game, game.minion_pool[id].owner).board[0].minion_id, 2)))
+        game.add_event(deal_damage,
+            (utils.opponent(game, game.minion_pool[id].owner).board[0].minion_id, 2))
         return True
 
 
 # id gets partially applied when effect is created
 def loot_hoarder(game, trigger, id):
     if trigger[0] == 'kill_minion' and trigger[1] == id:
-        game.action_queue.append(
-            (events.draw, (game, game.minion_pool[id].owner,)))
+        game.add_event(events.draw, (game.minion_pool[id].owner,))
         return True
 
 
 def nightblade(game, trigger, id):
     if trigger[0] == 'battlecry' and trigger[1] == id:
-        game.action_queue.append((events.deal_damage, (game, utils.opponent(
-            game, game.minion_pool[id].owner).board[0].minion_id, 3)))
+        game.add_event(events.deal_damage,
+            (utils.opponent(game, game.minion_pool[id].owner).board[0].minion_id, 3))
         return True
 
 
 def novice_engineer(game, trigger, id):
     if trigger[0] == 'battlecry' and trigger[1] == id:
-        game.action_queue.append((events.draw, (game, game.player,)))
+        game.add_event(events.draw, (game.player,))
         return True
 
 
@@ -113,12 +106,6 @@ def raid_leader(game, trigger, id):
     game.minion_pool[id].owner.auras.add(utils.Aura(id, modifier))
     return True
 
-
-def water_elemental(game, trigger, id):
-    if trigger[0] == 'attack' and id in trigger[1:]:
-        enemy = game.minion_pool[filter(lambda x:x != id, trigger[1:])[0]]
-        enemy.attacks_left = 0
-        enemy.mechanics.add('Frozen')
 
 exceptions = ['minion_effects', 'actions', 'utils', 'exceptions', 'senjin_shieldmasta']
 minion_effects = {utils.func_to_name(key): val for key, val in locals(

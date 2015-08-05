@@ -5,7 +5,7 @@ import utils
 def flame_leviathan(game, trigger, id):
     if trigger[0] == 'draw' and id in trigger[1:]:
         for minion_id in game.minion_pool:
-            game.action_queue.append((events.deal_damage, (game, minion_id, 2)))
+            game.add_event(events.deal_damage, (minion_id, 2))
 
 
 def mana_worm(game, trigger, id):

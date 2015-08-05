@@ -13,11 +13,10 @@ def charge(game):
 
 def shield_block(game):
     game.player.armor += 5
-    game.action_queue.append((events.draw, (game, game.player)))
+    game.add_event(events.draw, (game.player,))
 
 
 def whirlwhind(game):
     for minion in game.player.board[1:] + game.enemy.board[1:]:
-        game.action_queue.append(
-            (events.deal_damage, (game, minion.minion_id, 1 + game.player.spellpower)))
+        game.add_event(events.deal_damage, (minion.minion_id, 1 + game.player.spellpower))
     

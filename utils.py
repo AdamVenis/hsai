@@ -1,5 +1,5 @@
 from random import shuffle, randint, choice
-from collections import deque
+from collections import deque, namedtuple
 import card_data
 import logging
 from time import strftime, gmtime
@@ -49,9 +49,13 @@ class Game():
         self.logger.info('AUX %d' % rtn)
         return rtn
 
+    def add_event(self, event, args=()):
+        self.action_queue.append((event, (self,) + args))
+        #self.action_queue.append(Event(event=event, args=args))
+
     def resolve(self):
         while self.action_queue:
-            display(self)
+            #display(self)
             action = self.action_queue.popleft() # TODO(adamvenis): fix resolution order
             print 'ACTION:', action[0].__name__, list(action[1][1:])
             # [1:] 'game' gets cut out, as it's always the first parameter
@@ -60,19 +64,19 @@ class Game():
 
     @property
     def ALL_MINIONS(self):
-        return game.player.board[1:] + game.enemy.board[1:]
+        return self.player.board[1:] + self.enemy.board[1:]
 
     @property
     def ALLY_MINIONS(self):
-        return game.player.board[1:]
+        return self.player.board[1:]
 
     @property
     def ENEMY_MINIONS(self):
-        return game.enemy.board[1:]
+        return self.enemy.board[1:]
 
     @property
     def ALL_CHARACTERS(self):
-        return game.player.board + game.enemy.board
+        return self.player.board + self.enemy.board
 
 
 class Player():
@@ -171,6 +175,9 @@ class Spell():
 	@staticmethod
 	def cast():
 		raise NotImplementedError("Subclasses should implement this!")
+
+
+Event = namedtuple('Event', 'event args')
 
 def apply_auras(game, player, object, stat, value):
     for aura in player.auras:

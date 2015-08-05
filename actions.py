@@ -115,7 +115,8 @@ class Attack(Action):
         else:
             damage = ally_minion.attack
             if damage > 0:
-                game.action_queue.append((deal_damage, (game, self.enemy_id, damage)))
+                game.add_event(deal_damage, (self.enemy_id, damage))
+                
 
         if 'Divine Shield' in ally_minion.mechanics:
             ally_minion.mechanics.remove('Divine Shield')
@@ -126,7 +127,7 @@ class Attack(Action):
             if enemy_minion == enemy_minion.owner.board[0] and enemy_minion.owner.weapon is not None:
                 damage -= enemy_minion.owner.weapon.attack
             if damage > 0:
-                game.action_queue.append((deal_damage, (game, self.ally_id, damage)))        
+                game.add_event(deal_damage, (self.ally_id, damage))
 
 @lazy
 class Cast(Action):
@@ -191,8 +192,7 @@ def hero_power(game):
 
     h = game.player.hero.lower()
     if h == 'hunter':
-        game.action_queue.append(
-            (deal_damage, (game, game.enemy.board[0].minion_id, 2)))
+        game.add_event(deal_damage, (game.enemy.board[0].minion_id, 2))
     elif h == 'warrior':
         game.player.armor += 2
     elif h == 'shaman':
@@ -202,25 +202,24 @@ def hero_power(game):
             if minion.name in totems:
                 totems.remove(minion.name)
         if totems:  # not all have been removed
-            game.action_queue.append(
-                (spawn, (game, game.player, card_data.get_card(game.choice(totems, random=True), game.player))))
+            game.add_event(spawn, 
+                (game.player, card_data.get_card(game.choice(totems, random=True), game.player)))
         else:
             print 'all totems have already been summoned!'
             return
     elif h == 'mage':
         target_id = target(game)
-        game.action_queue.append((deal_damage, (game, target_id, 1)))
+        game.add_event(deal_damage, (target_id, 1))
     elif h == 'warlock':
-        game.action_queue.append((deal_damage, (game, game.player.board[0].minion_id, 2)))
-        game.action_queue.append((draw, (game, game.player)))
+        game.add_event(deal_damage, (game.player.board[0].minion_id, 2))
+        game.add_event(draw, (game.player,))
     elif h == 'rogue':
         game.player.weapon = Weapon(game, 1, 2)
     elif h == 'priest':
         target_id = target(game)
-        game.action_queue.append((heal, (game, target_id, 2)))
+        game.add_event(heal, (target_id, 2))
     elif h == 'paladin':
-        game.action_queue.append(
-            (spawn, (game, game.player, card_data.get_card('Silver Hand Recruit'))))
+        game.add_event(spawn, (game.player, card_data.get_card('Silver Hand Recruit')))
     elif h == 'druid':
         game.player.armor += 1
         game.player.board[0].attack += 1
