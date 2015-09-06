@@ -31,7 +31,7 @@ def new_game():
 
     print choice(['Take a seat by the hearth!', 'Welcome back!', "Busy night! But there's always room for another!"])
     heroes = [None, None]
-    for i in range(2):
+    for i in [0,1]:
         heroes[i] = raw_input('Choose your class (Player %s) ' % (i + 1))
         while heroes[i].lower() not in ['warrior', 'hunter', 'mage', 'warlock', 'shaman', 'rogue', 'priest', 'paladin', 'druid']:
             heroes[i] = raw_input('Not a valid hero! Choose again. ')
@@ -63,7 +63,7 @@ def new_game():
                                                health=30, mechanics={}, race=None, owner=player, card_id=None))
 
     events.start_turn(game)
-    play_out(game, HumanAgent(), HumanAgent())
+    return play_out(game, HumanAgent(), HumanAgent())
 
 
 def load(replay_file):
@@ -75,9 +75,9 @@ def load(replay_file):
         game = Game(pregame['P1']['hero'], pregame['P2']['hero'],
                     pregame['P1']['deck'], pregame['P2']['deck'])
 
-        for i in range(3):
+        for _ in range(3):
             game.add_event(events.draw, (game.player1,))
-        for i in range(4):
+        for _ in range(4):
             game.add_event(events.draw, (game.player2,))
         game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
@@ -117,13 +117,17 @@ def play_out(game, agent1, agent2):
         agent = agent1 if player == game.player1 else agent2
 
         # TODO(adamvenis): turn this into a triggered effect?
-        if game.player1.board[0].health <= 0 and game.player2.board[0].health <= 0:
+        p1_dead = (len(game.player1.board) == 0 or
+                   game.player1.board[0].name != 'Hero')
+        p2_dead = (len(game.player2.board) == 0 or
+                   game.player2.board[0].name != 'Hero')
+        if p1_dead or p2_dead:
             game.winner = 3
             break
-        elif game.player1.board[0].health <= 0:
+        elif p1_dead:
             game.winner = 2
             break
-        elif game.player2.board[0].health <= 0:
+        elif p2_dead:
             game.winner = 1
             break
 

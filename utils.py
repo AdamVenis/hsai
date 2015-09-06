@@ -185,35 +185,6 @@ def apply_auras(game, player, object, stat, value):
     return value
 
 
-def validate_attack(game, player_ind, enemy_ind):
-    if player_ind not in range(len(game.player.board)):
-        print 'wrong index for ally minion. Must supply a number from 0 to %s' % str(len(game.player.board))
-        return False
-    elif enemy_ind not in range(len(game.enemy.board)):
-        print 'wrong index for enemy minion. Must supply a number from 0 to %s' % str(len(game.enemy.board))
-        return False
-
-    ally_minion = game.player.board[player_ind]
-    enemy_minion = game.enemy.board[enemy_ind]
-
-    if ally_minion.attacks_left <= 0:
-        print 'this minion cannot attack'
-        return False
-    elif ally_minion.attack <= 0:
-        print 'this minion has no attack'
-        return False
-    elif 'Frozen' in ally_minion.mechanics or 'Thawing' in ally_minion.mechanics:
-        print 'This minion is frozen, and cannot attack'
-        return False
-    elif 'Stealth' in enemy_minion.mechanics:
-        print 'cannot attack a minion with stealth'
-        return False
-    elif 'Taunt' not in enemy_minion.mechanics and any('Taunt' in minion.mechanics for minion in game.enemy.board[1:]):
-        print 'must target a minion with taunt'
-        return False
-    return True
-
-
 def func_to_name(s):
     """some_function_name becomes Some Function Name"""
     s = s.split('_')
@@ -274,9 +245,9 @@ def display(game):
     print 'Player2 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
         game.player2.hero, game.player2.current_crystals, 
         game.player2.crystals, game.player2.board[0].health,
-        '' if game.player2.armor == 0 else ', Armor : %d' % game.player2.armor,
-        '' if game.player2.weapon == None else ', Weapon : %s' % game.player2.weapon,
-        '' if game.player2.board[0].attack == 0 else ', Attack : %d' % game.player2.board[0].attack)
+        '' if game.player2.armor == 0 else ', Armor: %d' % game.player2.armor,
+        '' if game.player2.weapon == None else ', Weapon: %s' % game.player2.weapon,
+        '' if game.player2.board[0].attack == 0 else ', Attack: %d' % game.player2.board[0].attack)
     print 'Player2 Hand: ' + ' | '.join(minion.name for minion in game.player2.hand)
     for i in range(len(player2_board_string[0]) / 79 + 1):
         for j in player2_board_string:
@@ -288,13 +259,14 @@ def display(game):
     print 'Player1 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
         game.player1.hero, game.player1.current_crystals,
         game.player1.crystals, game.player1.board[0].health,
-        '' if game.player1.armor == 0 else ', Armor : %d' % game.player1.armor,
-        '' if game.player1.weapon == None else ', Weapon : %s' % game.player1.weapon,
-        '' if game.player1.board[0].attack == 0 else ', Attack : %d' % game.player1.board[0].attack)
+        '' if game.player1.armor == 0 else ', Armor: %d' % game.player1.armor,
+        '' if game.player1.weapon == None else ', Weapon: %s' % game.player1.weapon,
+        '' if game.player1.board[0].attack == 0 else ', Attack: %d' % game.player1.board[0].attack)
 
 
 def trigger_effects(game, trigger):
-	game.effect_pool = [effect for effect in game.effect_pool if not effect(game, trigger)]
+	game.effect_pool = [effect for effect in game.effect_pool
+                        if not effect(game, trigger)]
 
 def opponent(game, player):
     return game.enemy if player == game.player else game.player

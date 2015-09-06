@@ -43,8 +43,8 @@ def heal(game, minion_id, amount):
 def kill_minion(game, minion_id): 
     minion = game.minion_pool[minion_id]
     minion.owner.board.remove(minion)
-    minion.owner.auras = set(
-        aura for aura in minion.owner.auras if aura.id != minion_id)
+    minion.owner.auras = set(aura for aura in minion.owner.auras
+                             if aura.id != minion_id)
     del game.minion_pool[minion_id]
 
 

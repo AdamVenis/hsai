@@ -55,12 +55,14 @@ class Summon(Action):
         game.player.current_crystals -= card.cost(game)
         del game.player.hand[self.index]
         minion = spawn(game, game.player, card)
-        trigger_effects(game, ['summon', minion.minion_id])
         trigger_effects(game, ['battlecry', minion.minion_id])
+        trigger_effects(game, ['summon', minion.minion_id])
 
 @lazy
 class Attack(Action):
     # either action_string is supplied, or source_id and target_id are supplied
+    # for things like rogue 'attack the minion next to you'. maybe not
+    # necessary if deal_damage gets a source
     def __init__(self, game, action_string="", source_id=None, target_id=None):
         if action_string:
             params = action_string.split()
@@ -116,7 +118,6 @@ class Attack(Action):
             damage = ally_minion.attack
             if damage > 0:
                 game.add_event(deal_damage, (self.enemy_id, damage))
-                
 
         if 'Divine Shield' in ally_minion.mechanics:
             ally_minion.mechanics.remove('Divine Shield')

@@ -12,7 +12,8 @@ def arcane_missiles(game):
 
 def arcane_explosion(game):
     for minion in game.enemy.board[1:]:
-        game.add_event(events.deal_damage, (minion.minion_id, 1 + game.player.spellpower))
+        game.add_event(events.deal_damage,
+                       (minion.minion_id, 1 + game.player.spellpower))
 
 
 def arcane_intellect(game):
@@ -31,5 +32,5 @@ def polymorph(game):  # TODO: this needs validation (cannot target heroes)
             [minion.minion_id for minion in game.enemy.board[1:]])
     events.silence(game, target_id)
     minion = game.minion_pool[target_id]
-    chicken = utils.Minion(game, card_data.get_card('Chicken', game.player))
+    chicken = utils.Minion(game, card_data.get_card('Sheep', game.player))
     minion.transform_into(chicken)
