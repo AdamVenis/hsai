@@ -7,6 +7,7 @@ import utils
 
 from druid_minions import *
 from mage_minions import *
+# id gets partially applied when effect is created
 
 def acolyte_of_pain(game, trigger, id):
     if trigger[0] == 'deal_damage' and trigger[1] == id:
@@ -73,7 +74,6 @@ def leper_gnome(game, trigger, id):
         return True
 
 
-# id gets partially applied when effect is created
 def loot_hoarder(game, trigger, id):
     if trigger[0] == 'kill_minion' and trigger[1] == id:
         game.add_event(events.draw, (game.minion_pool[id].owner,))

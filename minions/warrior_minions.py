@@ -7,4 +7,3 @@ def armorsmith(game, trigger, id):
         game.minion_pool[id].owner.armor += 1
 
 
-            

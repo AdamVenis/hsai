@@ -1,9 +1,13 @@
+from __future__ import print_function
+
 from utils import *
 from events import deal_damage, draw, heal, spawn, start_turn, target
 from card_types import MinionCard, SpellCard, WeaponCard
 import minions.minion_effects
 import spells.spell_effects as spell_effects
 import card_data
+
+import inspect
 
 class Action():
     def execute(self, game):
@@ -12,7 +16,7 @@ class Action():
 
 class End(Action):
     def __init__(self):
-        # TODO validation that the string is precisely "END"?
+        # TODO validation that the string is precisely 'END'?
         pass
     
     def execute(self, game):
@@ -38,23 +42,32 @@ class Concede(Action):
 class Summon(Action):
     def __init__(self, game, action_string):
         params = action_string.split()
-        if len(params) != 2:
-            raise Exception("SUMMON requires exactly one additional argument")
+        if len(params) not in [2, 3]:
+            raise Exception(
+                'SUMMON requires exactly one or two additional arguments')
         index = int(params[1])
-        if not (0 <= index < len(game.player.hand)):
-            raise Exception("Must SUMMON a valid index from your hand")
+        if index not in range(len(game.player.hand)):
+            raise Exception('Must SUMMON a valid index from your hand')
         if not isinstance(game.player.hand[index], MinionCard):
-            raise Exception("Must SUMMON a Minion type card")
+            raise Exception('Must SUMMON a Minion type card')
         if game.player.hand[index].cost(game) > game.player.current_crystals:
-            raise Exception("Insufficient funds")
+            raise Exception('Insufficient funds')
         self.index = index
+
+        if len(params) == 3:
+            position = int(params[2])
+            if position not in range(len(game.player.board)):
+                raise Exception('Must provide a valid position to be summoned')
+            self.position = position
+        else:
+            self.position = len(game.player.board) - 1
         
     def execute(self, game):
         game.logger.info('SUMMON %d' % self.index)
         card = game.player.hand[self.index]
         game.player.current_crystals -= card.cost(game)
         del game.player.hand[self.index]
-        minion = spawn(game, game.player, card)
+        minion = spawn(game, game.player, card, self.position)
         trigger_effects(game, ['battlecry', minion.minion_id])
         trigger_effects(game, ['summon', minion.minion_id])
 
@@ -63,32 +76,32 @@ class Attack(Action):
     # either action_string is supplied, or source_id and target_id are supplied
     # for things like rogue 'attack the minion next to you'. maybe not
     # necessary if deal_damage gets a source
-    def __init__(self, game, action_string="", source_id=None, target_id=None):
+    def __init__(self, game, action_string='', source_id=None, target_id=None):
         if action_string:
             params = action_string.split()
             if len(params) != 3:
-                raise Exception("ATTACK requires exactly two additional arguments")
+                raise Exception('ATTACK requires exactly two additional arguments')
             source_index = int(params[1])
             target_index = int(params[2])
             if not (0 <= source_index < len(game.player.board)):
-                raise Exception("Invalid source index")
+                raise Exception('Invalid source index')
             if not (0 <= target_index < len(game.enemy.board)):
-                raise Exception("Invalid target index")
+                raise Exception('Invalid target index')
             # TODO(adamvenis): make sure you can't attack stealth,
             # or nontaunt when taunt exists
             ally_minion = game.player.board[source_index]
             enemy_minion = game.enemy.board[target_index]
             
             if ally_minion.attacks_left <= 0:
-                raise Exception("This minion cannot attack")
+                raise Exception('This minion cannot attack')
             if ally_minion.attack <= 0:
-                raise Exception("This minion has no attack")
+                raise Exception('This minion has no attack')
             if 'Frozen' in ally_minion.mechanics or 'Thawing' in ally_minion.mechanics:
-                raise Exception("This minion is frozen, and cannot attack")
+                raise Exception('This minion is frozen, and cannot attack')
             if 'Stealth' in enemy_minion.mechanics:
-                raise Exception("Cannot attack a minion with stealth")
+                raise Exception('Cannot attack a minion with stealth')
             if 'Taunt' not in enemy_minion.mechanics and any('Taunt' in minion.mechanics for minion in game.enemy.board[1:]):
-                raise Exception("Must target a minion with taunt")
+                raise Exception('Must target a minion with taunt')
 
             self.ally_id = ally_minion.minion_id
             self.enemy_id = enemy_minion.minion_id
@@ -136,23 +149,30 @@ class Cast(Action):
     def __init__(self, game, action_string):
         params = action_string.split()
         if len(params) != 2:
-            raise Exception("CAST requires exactly one additional argument")
+            raise Exception('CAST requires exactly one additional argument')
         index = int(params[1])
         if not (0 <= index < len(game.player.hand)):
-            raise Exception("Must CAST a valid index from your hand")
+            raise Exception('Must CAST a valid index from your hand')
         if not isinstance(game.player.hand[index], SpellCard):
-            raise Exception("Must CAST a Spell type card")
+            raise Exception('Must CAST a Spell type card')
         if game.player.hand[index].cost(game) > game.player.current_crystals:
-            raise Exception("Insufficient funds")
+            raise Exception('Insufficient funds')
         self.index = index
+        self.spell_card = game.player.hand[self.index]
+        spell_card_name = self.spell_card.name.replace(' ', '')
+        self.spell = spell_effects.__dict__.get(spell_card_name)
         
-    def execute(self, game):
+    def execute(self, game, params=None):
+        trigger_effects(game, ['cast_spell', self.spell_card])
         game.logger.info('CAST %d' % self.index)
-        spell_card = game.player.hand[self.index]
-        trigger_effects(game, ['cast_spell', spell_card])
-        game.player.current_crystals -= spell_card.cost(game)
+        game.player.current_crystals -= self.spell_card.cost(game)
         del game.player.hand[self.index]
-        spell_effects.__dict__[name_to_func(spell_card.name)](game)
+        try:
+            spell = spell_effects.__dict__[name_to_func(self.spell_card.name)]
+            spell(game) # game. G - A - M - E. game.
+        except KeyError:
+            self.spell(game).execute(params)
+            print('hey you used a spell in the new way')
 
 
 class HeroPower(Action):
@@ -163,32 +183,32 @@ class HeroPower(Action):
         hero_power(game) # TODO: inline this
 
 
-def parse_move(game, input):
+def parse_action(game, input):
     input = input.lower()
-    if input.startswith("summon"):
+    if input.startswith('summon'):
         return Summon(game, input)
-    elif input.startswith("attack"):
+    elif input.startswith('attack'):
         return Attack(game, input)
-    elif input.startswith("cast"):
+    elif input.startswith('cast'):
         return Cast(game, input)
-    elif input.startswith("hero"):
+    elif input.startswith('hero'):
         return HeroPower(game)
-    elif input.startswith("end"):
+    elif input.startswith('end'):
         return End()
-    elif input.startswith("concede"):
+    elif input.startswith('concede'):
         return Concede()
     else:
-        print 'invalid input ', input
+        print('invalid input ', input)
         return Action()
 
 
 def hero_power(game):
 
     if game.player.current_crystals < 2:
-        print 'not enough mana!'
+        print('not enough mana!')
         return
     elif not game.player.can_hp:
-        print 'can only use this once per turn!'
+        print('can only use this once per turn!')
         return
 
     h = game.player.hero.lower()
@@ -206,7 +226,7 @@ def hero_power(game):
             game.add_event(spawn, 
                 (game.player, card_data.get_card(game.choice(totems, random=True), game.player)))
         else:
-            print 'all totems have already been summoned!'
+            print('all totems have already been summoned!')
             return
     elif h == 'mage':
         target_id = target(game)

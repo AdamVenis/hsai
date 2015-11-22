@@ -23,11 +23,11 @@ def deal_damage(game, minion_id, damage):
 
 def draw(game, player):
     if not player.deck:
-        print "We're out of cards!"
+        print("We're out of cards!")
         player.fatigue += 1
         player.board[0].current_health -= player.fatigue
     elif len(player.hand) == 10:
-        print 'hand is full! %s is burned' % player.deck[0].name
+        print('hand is full! %s is burned' % player.deck[0].name)
         del player.deck[0]
     else:
         player.hand.append(player.deck[0])
@@ -48,14 +48,15 @@ def kill_minion(game, minion_id):
     del game.minion_pool[minion_id]
 
 
-def pick(game, options): # mostly for druid stuff
+def pick(game, options):
+    # mostly for druid stuff
 
     if game.aux_vals: # loading from replay
         return game.aux_vals.popleft()
 
-    print 'Pick one of the following by typing the corresponding number:'
+    print('Pick one of the following by typing the corresponding number:')
     for i, option in enumerate(options):
-        print '%d : %s' % (i, option)
+        print('%d : %s' % (i, option))
     while True:
         input = raw_input()
         try:
@@ -65,7 +66,8 @@ def pick(game, options): # mostly for druid stuff
             continue
 
 
-def silence(game, minion_id):  # removes effects and auras of a minion. or does it? (gurubashi)
+def silence(game, minion_id):
+    # removes effects and auras of a minion. or does it? (gurubashi)
     try:
         minion = game.minion_pool[minion_id]
     except KeyError:
@@ -74,9 +76,14 @@ def silence(game, minion_id):  # removes effects and auras of a minion. or does 
     minion.owner.auras = set(aura for aura in minion.owner.auras if aura.id != minion_id)
 
 
-def spawn(game, player, card):  # equivalent of summon when not from hand
+def spawn(game, player, card, position=None):
+    # equivalent of summon when not from hand
+    
+    if position is None: # default position is on the right
+        position = len(player.board) - 1
+
     minion = Minion(game, card)
-    player.board.append(minion)
+    player.board.insert(position + 1, minion) # never displace the hero
     if 'Charge' in minion.mechanics:
         if 'Windfury' in minion.mechanics:
             minion.attacks_left = 2
@@ -96,7 +103,7 @@ def start_turn(game):
     player.current_crystals = player.crystals
     game.add_event(draw, (player,))
 
-    print " \nIt is now Player %d's turn" % ((game.turn % 2) + 1)
+    print('\nIt is now Player %d\'s turn' % ((game.turn % 2) + 1))
 
     for minion in player.board:
         if 'Windfury' in minion.mechanics:
@@ -118,23 +125,23 @@ def target(game, valid_targets=None): # TODO(adamvenis): make this agent specifi
     if game.aux_vals: # loading from replay
         return game.aux_vals.popleft()
 
-    print 'pick a target'
+    print('pick a target')
     while True:
         user_input = raw_input().split(' ')
         if len(user_input) != 2:
-            print 'wrong number of parameters'
+            print('wrong number of parameters')
             continue
         elif not is_int(user_input[1]):
-            print 'second argument must be an integer'
+            print('second argument must be an integer')
             continue
         elif user_input[0] not in ['a', 'ally', 'e', 'enemy']:
-            print 'first argument must refer to either the ally or the enemy'
+            print('first argument must refer to either the ally or the enemy')
             continue
             
         user_input[1] = int(user_input[1])
         if (user_input[0] in ['a', 'ally'] and user_input[1] not in range(len(game.player.board))) or (
                 user_input[0] in ['e', 'enemy'] and user_input[1] not in range(len(game.enemy.board))):
-            print 'second argument must be a valid index on the board'
+            print('second argument must be a valid index on the board')
             continue
             
         if user_input[0] in ['a', 'ally']:
@@ -143,7 +150,7 @@ def target(game, valid_targets=None): # TODO(adamvenis): make this agent specifi
             minion_id = game.enemy.board[user_input[1]].minion_id
 
         if valid_targets is not None and minion_id not in valid_targets:
-            print 'this is an invalid target for this action'
+            print('this is an invalid target for this action')
             continue
         else:
             game.logger.info('AUX %d' % minion_id)

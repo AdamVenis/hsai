@@ -15,7 +15,7 @@ def shaman(game):
         game.add_event(spawn, 
             (game.player, card_data.get_card(game.choice(totems, random=True), game.player)))
     else:
-        print 'all totems have already been summoned!'
+        print('all totems have already been summoned!')
         '''
     elif h == 'mage':
         id = target(game)

@@ -10,10 +10,18 @@ from card_types import MinionCard, SpellCard
 
 
 def get_all_cards():
-    raw_cards = loads(open("AllSets.json").read())
+    raw_cards = loads(open('AllSets.json').read())
     cards = []
     for val in raw_cards.values():
         cards += val
+    return cards
+
+def card_id_map():
+    raw_cards = loads(open('AllSets.json').read())
+    cards = {}
+    for card_chunk in raw_cards.values():
+        for card in card_chunk:
+            cards[card['id']] = card
     return cards
 
 cards = get_all_cards()
@@ -22,8 +30,10 @@ cards = get_all_cards()
 def get_card(card_name, owner):
     for card in cards:
         if card.get('name') == card_name:
-            params = {'name': card.get('name'), 'neutral_cost': card.get(
-                'cost', 0), 'owner': owner, 'card_id': card.get('id')}
+            params = {'name': card.get('name'),
+                      'neutral_cost': card.get('cost', 0),
+                      'owner': owner,
+                      'card_id': card.get('id')}
             if card.get('type') == 'Minion':
                 params['attack'] = card.get('attack')
                 params['health'] = card.get('health')
@@ -36,7 +46,7 @@ def get_card(card_name, owner):
                 params['attack'] = card.get('attack')
                 params['durability'] = card.get('durability')
                 return WeaponCard(**params)
-    print 'ERROR: CARD NOT FOUND'
+    print('ERROR: CARD NOT FOUND')
 
 
 def get_deck(names, owner):

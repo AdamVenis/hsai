@@ -17,7 +17,7 @@ def mulligan(game, player):
 
     hand_size = 3 if player == game.player else 4
     shown_cards = player.deck[:hand_size]
-    print 'Your cards are %s' % shown_cards
+    print('Your cards are %s' % shown_cards)
     mulligans = raw_input('Indicate which cards you want shuffled back by typing space delimited indices.')
     while not all(0 <= int(index) < len(shown_cards) for index in mulligans.split()):
         mulligans = raw_input('Invalid input! Try again.')
@@ -29,14 +29,15 @@ def mulligan(game, player):
 
 def new_game():
 
-    print choice(['Take a seat by the hearth!', 'Welcome back!', "Busy night! But there's always room for another!"])
+    print(choice(['Take a seat by the hearth!', 'Welcome back!',
+                  'Busy night! But there\'s always room for another!']))
     heroes = [None, None]
     for i in [0,1]:
         heroes[i] = raw_input('Choose your class (Player %s) ' % (i + 1))
         while heroes[i].lower() not in ['warrior', 'hunter', 'mage', 'warlock', 'shaman', 'rogue', 'priest', 'paladin', 'druid']:
             heroes[i] = raw_input('Not a valid hero! Choose again. ')
 
-    print '%s versus %s!' % tuple(heroes)
+    print('%s versus %s!' % tuple(heroes))
     game = Game(heroes[0], heroes[1], decks.default_mage, decks.default_mage)   
     shuffle(game.player1.deck)
     shuffle(game.player2.deck)
@@ -100,14 +101,14 @@ def load(replay_file):
                 moves.append(action)
                 
         for move in moves:
-            parsed_move = parse_move(game, move)
-            if isinstance(parsed_move, Concede):
+            parsed_action = parse_action(game, move)
+            if isinstance(parsed_action, Concede):
                 return game
-            game.add_event(parsed_move.execute)
+            game.add_event(parsed_action.execute)
             game.resolve()
 
         return play_out(game, HumanAgent(), HumanAgent())
-    print 'how could we ever get here?'
+    print('how could we ever get here?')
 
 
 def play_out(game, agent1, agent2):
@@ -121,7 +122,7 @@ def play_out(game, agent1, agent2):
                    game.player1.board[0].name != 'Hero')
         p2_dead = (len(game.player2.board) == 0 or
                    game.player2.board[0].name != 'Hero')
-        if p1_dead or p2_dead:
+        if p1_dead and p2_dead:
             game.winner = 3
             break
         elif p1_dead:
@@ -136,20 +137,24 @@ def play_out(game, agent1, agent2):
                 game.resolve()
                 display(game)
                 action = agent.move(game)
-                action.execute(game)
+                if isinstance(action, Cast):
+                    params = agent.get_params(action)
+                    action.execute(game, params)
+                else:
+                    action.execute(game)
                 break
             except Exception as e:
-                print e
+                print(e)
 
         if isinstance(action, Concede):
             break
 
     if game.winner == 3:
-        print "It's a draw!"
+        print('It\'s a draw!')
     elif game.winner == 2:
-        print "Player 2 wins!"
+        print('Player 2 wins!')
     elif game.winner == 1:
-        print "Player 1 wins!"
+        print('Player 1 wins!')
     return game # so the tests can verify the game state
         
 # new_game()  # for debugging, just so it autoruns

@@ -1,3 +1,4 @@
+from __future__ import print_function
 from random import shuffle, randint, choice
 from collections import deque, namedtuple
 import card_data
@@ -55,9 +56,9 @@ class Game():
 
     def resolve(self):
         while self.action_queue:
-            #display(self)
+            #display(self) # uncomment this?
             action = self.action_queue.popleft() # TODO(adamvenis): fix resolution order
-            print 'ACTION:', action[0].__name__, list(action[1][1:])
+            print('ACTION:', action[0].__name__, list(action[1][1:]))
             # [1:] 'game' gets cut out, as it's always the first parameter
             trigger_effects(self, [action[0].__name__] + list(action[1][1:]))
             action[0](*action[1])  # tuple with arguments in second slot
@@ -98,7 +99,7 @@ class Player():
         self.combo = 0
 
     def __str__(self):
-        print 'PLAYER'  # TODO: this is stupid
+        print('PLAYER')  # TODO: this is stupid
 
 
 class Minion():
@@ -174,7 +175,7 @@ class Aura():
 class Spell():
 	@staticmethod
 	def cast():
-		raise NotImplementedError("Subclasses should implement this!")
+		raise NotImplementedError('Subclasses should implement this!')
 
 
 Event = namedtuple('Event', 'event args')
@@ -192,8 +193,7 @@ def func_to_name(s):
 
 
 def name_to_func(s):
-    s = s.replace(' ', '_')
-    return s.lower()
+    return s.lower().replace(' ', '_')
 
 
 def is_int(s):
@@ -241,27 +241,27 @@ def display(game):
     player2_board_string[2] = ' '.join(player2_board_string[2])
     player2_board_string.append(player2_board_string[0])
 
-    print '-' * 79
-    print 'Player2 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
+    print('-' * 79)
+    print('Player2 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
         game.player2.hero, game.player2.current_crystals, 
         game.player2.crystals, game.player2.board[0].health,
         '' if game.player2.armor == 0 else ', Armor: %d' % game.player2.armor,
         '' if game.player2.weapon == None else ', Weapon: %s' % game.player2.weapon,
-        '' if game.player2.board[0].attack == 0 else ', Attack: %d' % game.player2.board[0].attack)
-    print 'Player2 Hand: ' + ' | '.join(minion.name for minion in game.player2.hand)
+        '' if game.player2.board[0].attack == 0 else ', Attack: %d' % game.player2.board[0].attack))
+    print('Player2 Hand: ' + ' | '.join(minion.name for minion in game.player2.hand))
     for i in range(len(player2_board_string[0]) / 79 + 1):
         for j in player2_board_string:
-            print j[i * 79:(i + 1) * 79]
+            print(j[i * 79:(i + 1) * 79])
     for i in range(len(player1_board_string[0]) / 79 + 1):
         for j in player1_board_string:
-            print j[i * 79:(i + 1) * 79]
-    print 'Player1 Hand: ' + ' | '.join(minion.name for minion in game.player1.hand)
-    print 'Player1 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
+            print(j[i * 79:(i + 1) * 79])
+    print('Player1 Hand: ' + ' | '.join(minion.name for minion in game.player1.hand))
+    print('Player1 Hero: %s, Crystals: %s/%s, Life: %s%s%s%s' % (
         game.player1.hero, game.player1.current_crystals,
         game.player1.crystals, game.player1.board[0].health,
         '' if game.player1.armor == 0 else ', Armor: %d' % game.player1.armor,
         '' if game.player1.weapon == None else ', Weapon: %s' % game.player1.weapon,
-        '' if game.player1.board[0].attack == 0 else ', Attack: %d' % game.player1.board[0].attack)
+        '' if game.player1.board[0].attack == 0 else ', Attack: %d' % game.player1.board[0].attack))
 
 
 def trigger_effects(game, trigger):
@@ -275,15 +275,15 @@ def lazy(original_class):
     orig_init = original_class.__init__
     orig_execute = original_class.execute
     
-    def __init__(self, *args):
+    def __init__(self, *init_args):
         self.is_init = False
-        self.init_args = args
+        self.init_args = init_args
 
-    def execute(self, game):
+    def execute(self, *exec_args):
         if not self.is_init:
             self.is_init = True
             orig_init(self, *self.init_args)
-        orig_execute(self, game)
+        orig_execute(self, *exec_args)
     
     original_class.__init__ = __init__
     original_class.execute = execute
