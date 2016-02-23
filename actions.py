@@ -184,6 +184,7 @@ class HeroPower(Action):
 
 
 def parse_action(game, input):
+
     input = input.lower()
     if input.startswith('summon'):
         return Summon(game, input)

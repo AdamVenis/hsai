@@ -98,9 +98,6 @@ class Player():
         self.overload = 0
         self.combo = 0
 
-    def __str__(self):
-        print('PLAYER')  # TODO: this is stupid
-
 
 class Minion():
     def __init__(self, game, card):

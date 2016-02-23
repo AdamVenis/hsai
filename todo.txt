@@ -1,18 +1,27 @@
-BUGS:
+-------
+|BUGS:|
+-------
 
 - KeyError occassionally occurs in kill_minion (no id found)
+- Mulligan cannot be deterministic reshuffling
 
+--------
+|TODOs:|
+--------
 
-TODOs:
-
+EASY:
 - turn trigger params into dict
-- add enrage
-- add logging
-- add load from replay functionality
-- decouple the logic from play()
+- better logging
 - add beast/murloc
 - make spellpower work in conjunction with auras (velen), in particular arcane missiles
-- add mulligans
 - add the ability to specify the position of spawned minions
-- add priorities to actions
+
+MEDIUM:
+- fix card information (add recall abilities e.g. sap)
 - put hero data in a separate file
+- make spells/minions into classes
+- allow spells to specify how they can be used (i.e. what can be targetted)
+
+HARD:
+- add enrage
+- add priorities to actions

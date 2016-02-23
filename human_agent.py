@@ -9,7 +9,7 @@ class HumanAgent():
     def move(self, game):
         return parse_action(game, raw_input())
 
-    def get_params(spell):
+    def get_params(self, spell):
         if isinstance(spell, spells.SimpleSpell):
             return None
         elif isinstance(spell, spells.TargetCharacterSpell):

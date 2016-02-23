@@ -18,7 +18,7 @@ def mulligan(game, player):
     hand_size = 3 if player == game.player else 4
     shown_cards = player.deck[:hand_size]
     print('Your cards are %s' % shown_cards)
-    mulligans = raw_input('Indicate which cards you want shuffled back by typing space delimited indices.')
+    mulligans = raw_input('Indicate which cards you want shuffled back by typing space delimited indices.\n')
     while not all(0 <= int(index) < len(shown_cards) for index in mulligans.split()):
         mulligans = raw_input('Invalid input! Try again.')
     # TODO(adamvenis): bad logic, user could know where in the deck the shuffled cards went
@@ -33,7 +33,7 @@ def new_game():
                   'Busy night! But there\'s always room for another!']))
     heroes = [None, None]
     for i in [0,1]:
-        heroes[i] = raw_input('Choose your class (Player %s) ' % (i + 1))
+        heroes[i] = raw_input('Choose your class (Player %s): ' % (i + 1))
         while heroes[i].lower() not in ['warrior', 'hunter', 'mage', 'warlock', 'shaman', 'rogue', 'priest', 'paladin', 'druid']:
             heroes[i] = raw_input('Not a valid hero! Choose again. ')
 
@@ -44,9 +44,9 @@ def new_game():
     p1_mulligans = mulligan(game, game.player1)
     p2_mulligans = mulligan(game, game.player2)        
     
-    for i in range(3):
+    for _ in range(3):
         game.add_event(events.draw, (game.player1,))
-    for i in range(4):
+    for _ in range(4):
         game.add_event(events.draw, (game.player2,))
     game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
@@ -60,8 +60,10 @@ def new_game():
     game.logger.info(json.dumps(pregame_logs))  
     
     for player in [game.player1, game.player2]:
-        events.spawn(game, player, MinionCard(name='Hero', neutral_cost=None, attack=0,
-                                               health=30, mechanics={}, race=None, owner=player, card_id=None))
+        events.spawn(game, player,
+                     MinionCard(name='Hero', neutral_cost=None, attack=0,
+                                health=30, mechanics={}, race=None,
+                                owner=player, card_id=None))
 
     events.start_turn(game)
     return play_out(game, HumanAgent(), HumanAgent())
