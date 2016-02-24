@@ -4,6 +4,8 @@ import card_data
 import events
 import utils
 
+from spell_utils import *
+
 def arcane_missiles(game):
     for i in range(3 + game.player.spellpower):
         game.add_event(events.deal_damage, 

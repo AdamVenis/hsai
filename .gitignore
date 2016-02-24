@@ -1,4 +1,6 @@
 *.pyc
 *.hsrep
+hsai_deps.svg
+commands.txt
 # track this golden replay for testing
 !2015-01-21-09-14-36.hsrep

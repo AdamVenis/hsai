@@ -1,8 +1,9 @@
-
 import actions
 import card_data
 import events
 import utils
+
+from spell_utils import *
 
 def charge(game):
     target_id = events.target(game, [minion.minion_id for minion in game.player.board[1:]])

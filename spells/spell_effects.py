@@ -8,38 +8,10 @@ import card_data
 import events
 import utils
 
+from spell_utils import *
 from mage_spells import *
 from warrior_spells import *
 
-class Spell():
-    def __init__(self, game):
-        self.game = game
-
-    def moves(self):
-        raise NotImplementedError
-
-    def execute(self, params):
-        raise NotImplementedError
-
-class SimpleSpell(Spell):
-    # for when no additional parameters are needed
-    pass
-
-class TargetMinionSpell(Spell):
-    def moves(self):
-        return self.game.ALL_MINIONS
-
-class TargetAllyMinionSpell(Spell):
-    def moves(self):
-        return self.game.ALLY_MINIONS
-
-class TargetEnemyMinionSpell(Spell):
-    def moves(self):
-        return self.game.ENEMY_MINIONS
-
-class TargetCharacterSpell(Spell):
-    def moves(self):
-        return self.game.ALL_CHARACTERS
 
 #def the_coin(game):
 #    game.player.current_crystals = min(game.player.current_crystals + 1, 10)
