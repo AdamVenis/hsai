@@ -1,20 +1,21 @@
 from functools import partial
-from utils import Minion, is_int, trigger_effects
+from utils import Minion, is_int, trigger_effects, display
 import minions.minion_effects
 
 def deal_damage(game, minion_id, damage):
     minion = game.minion_pool[minion_id]
+    print('%d damage is dealt to %s' % (damage, minion))
     player = minion.owner
-    if minion.name == 'hero' and damage < player.armor:
+    if minion.name == 'Hero' and damage < player.armor:
         player.armor -= damage
-    elif game.minion_pool[minion_id].name == 'hero' and player.armor:
+    elif game.minion_pool[minion_id].name == 'Hero' and player.armor:
         minion.current_health -= damage - player.armor
         player.armor = 0
     else:
         minion.current_health -= damage
 
     if minion.health <= 0:
-        if minion.name == 'hero':
+        if minion.name == 'Hero':
             # equivalent to highest priority?
             trigger_effects(game, ['kill_hero', player])
         else:
@@ -38,12 +39,14 @@ def draw(game, player):
 
 def heal(game, minion_id, amount):
     minion = game.minion_pool[minion_id]
+    print('%s is healed by %d' % (minion, amount))
     minion.current_health = min(
         minion.current_health + amount, minion.max_health)
 
 
-def kill_minion(game, minion_id): 
+def kill_minion(game, minion_id):
     minion = game.minion_pool[minion_id]
+    print('%s is killed' % minion)
     minion.owner.board.remove(minion)
     minion.owner.auras = set(aura for aura in minion.owner.auras
                              if aura.id != minion_id)
@@ -72,8 +75,9 @@ def silence(game, minion_id):
     # removes effects and auras of a minion. or does it? (gurubashi)
     try:
         minion = game.minion_pool[minion_id]
-    except KeyError:
+    except KeyError: # TODO: remove this when program is more robust
         return
+    print('%s is silenced' % minion)
     game.effect_pool = [effect for effect in game.effect_pool if effect.keywords.get('id') != minion_id]
     minion.owner.auras = set(aura for aura in minion.owner.auras if aura.id != minion_id)
 
@@ -85,6 +89,7 @@ def spawn(game, player, card, position=None):
         position = len(player.board) - 1
 
     minion = Minion(game, card)
+    print('Player %d spawns %s' % ((game.turn % 2) + 1, minion))
     player.board.insert(position + 1, minion) # never displace the hero
     if 'Charge' in minion.mechanics:
         if 'Windfury' in minion.mechanics:
@@ -119,6 +124,7 @@ def start_turn(game):
             minion.attacks_left = 1
     player.can_hp = True
 
+    #display(game) # for debug purposes in replay mode
     trigger_effects(game, ['start_turn', player])    
 
 

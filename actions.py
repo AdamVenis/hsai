@@ -117,7 +117,7 @@ class Attack(Action):
         trigger_effects(game, ['attack', self.ally_id, self.enemy_id])
         ally_minion = game.minion_pool[self.ally_id]
         enemy_minion = game.minion_pool[self.enemy_id]
-        print('Player %d attacks %s with %s' % ((game.turn % 2) + 1, ally_minion.name, enemy_minion.name))
+        print('Player %d attacks %s with %s' % ((game.turn % 2) + 1, enemy_minion.name, ally_minion.name))
 
         if ally_minion == ally_minion.owner.board[0] and game.player.weapon:
             game.player.weapon.durability -= 1
@@ -167,8 +167,7 @@ class Cast(Action):
         spell_card_name = card.name.replace(' ', '')
         self.spell = spell_effects.__dict__.get(spell_card_name)
 
-    def execute(self, game, params=None):
-        print('Player %d casts %s' % ((game.turn % 2) + 1, self.spell_card.name))
+    def execute(self, game, agent):
         trigger_effects(game, ['cast_spell', self.spell_card])
         game.logger.info('CAST %d' % self.index)
         game.player.current_crystals -= self.spell_card.cost(game)
@@ -177,9 +176,13 @@ class Cast(Action):
         # eventually the function-style should be removed
         try:
             spell = spell_effects.__dict__[name_to_func(self.spell_card.name)]
+            print('Player %d casts %s' % ((game.turn % 2) + 1, self.spell_card.name))
             spell(game) # game. G - A - M - E. game.
         except KeyError:
-            self.spell(game).execute(params)
+            spell = self.spell(game)
+            params = agent.get_params(game, spell)
+            print('Player %d casts %s with params %s' % ((game.turn % 2) + 1, self.spell_card.name, params))
+            spell.execute(**params)
 
 
 class HeroPower(Action):

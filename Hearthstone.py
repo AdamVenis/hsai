@@ -9,6 +9,7 @@ import minions.minion_effects
 import spells.spell_effects as spell_effects
 from card_types import MinionCard, SpellCard
 from human_agent import HumanAgent
+from replay_agent import ReplayAgent
 
 import json
 from random import shuffle
@@ -101,13 +102,17 @@ def load(replay_file):
                 game.aux_vals.append(int(action[1]))
             else:
                 moves.append(action)
-                
+
+        agent = ReplayAgent()
         for move in moves:
+            game.resolve()
             parsed_action = parse_action(game, move)
             if isinstance(parsed_action, Concede):
                 return game
-            game.add_event(parsed_action.execute)
-            game.resolve()
+            elif isinstance(parsed_action, Cast):
+                parsed_action.execute(game, agent)
+            else:
+                parsed_action.execute(game)
 
         return play_out(game, HumanAgent(), HumanAgent())
     print('how could we ever get here?')
@@ -140,8 +145,7 @@ def play_out(game, agent1, agent2):
                 display(game)
                 action = agent.move(game)
                 if isinstance(action, Cast):
-                    params = agent.get_params(action)
-                    action.execute(game, params)
+                    action.execute(game, agent)
                 else:
                     action.execute(game)
                 break

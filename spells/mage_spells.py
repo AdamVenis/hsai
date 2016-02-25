@@ -27,12 +27,10 @@ def fireball(game):
     target_id = events.target(game)
     game.add_event(events.deal_damage, (target_id, 6 + game.player.spellpower))
 
-
-def polymorph(game):  # TODO: this needs validation (cannot target heroes)
-    target_id = events.target(game,
-            [minion.minion_id for minion in game.player.board[1:]] + 
-            [minion.minion_id for minion in game.enemy.board[1:]])
-    events.silence(game, target_id)
-    minion = game.minion_pool[target_id]
-    chicken = utils.Minion(game, card_data.get_card('Sheep', game.player))
-    minion.transform_into(chicken)
+class Polymorph(TargetMinionSpell):
+    id = 'CS2_022'
+    def execute(self, **params):
+        events.silence(self.game, params['target_id'])
+        minion = self.game.minion_pool[params['target_id']]
+        chicken = utils.Minion(self.game, card_data.get_card('Sheep', self.game.player))
+        minion.transform_into(chicken)

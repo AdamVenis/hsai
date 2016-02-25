@@ -14,7 +14,7 @@ from warrior_spells import *
 
 class TheCoin(SimpleSpell):
     id = 'GAME_005'
-    def execute(self, params):
+    def execute(self, **params):
         if self.game.player.current_crystals < 10:
             self.game.player.current_crystals += 1
 

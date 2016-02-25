@@ -9,11 +9,12 @@ class HumanAgent():
     def move(self, game):
         return parse_action(game, raw_input())
 
-    def get_params(self, spell):
+    def get_params(self, game, spell):
         if isinstance(spell, spells.SimpleSpell):
             return None
         elif isinstance(spell, spells.TargetCharacterSpell):
-            raise NotImplementedError
-            return events.target()
+            return {'target_id': events.target(game,
+                        valid_targets=[minion.minion_id for minion in game.player.board[1:]] + 
+                                      [minion.minion_id for minion in game.enemy.board[1:]])}
         else:
             return None
