@@ -13,7 +13,7 @@ class HumanAgent():
         if isinstance(spell, spells.SimpleSpell):
             return None
         elif isinstance(spell, spells.TargetCharacterSpell):
-            return None
-            # return events.target()
+            raise NotImplementedError
+            return events.target()
         else:
             return None

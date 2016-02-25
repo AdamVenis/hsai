@@ -58,7 +58,7 @@ class Game():
         while self.action_queue:
             #display(self) # uncomment this?
             action = self.action_queue.popleft() # TODO(adamvenis): fix resolution order
-            print('ACTION:', action[0].__name__, list(action[1][1:]))
+            #print('ACTION:', action[0].__name__, list(action[1][1:])) # random debug stuff
             # [1:] 'game' gets cut out, as it's always the first parameter
             trigger_effects(self, [action[0].__name__] + list(action[1][1:]))
             action[0](*action[1])  # tuple with arguments in second slot

@@ -11,7 +11,7 @@ import inspect
 
 class Action():
     def execute(self, game):
-        pass
+        raise NotImplementedError
 
 
 class End(Action):
@@ -20,6 +20,7 @@ class End(Action):
         pass
     
     def execute(self, game):
+        print('Player %d ends their turn' % ((game.turn % 2) + 1))
         game.logger.info('END_TURN')
         trigger_effects(game, ['end_turn', game.player])
         game.turn += 1
@@ -32,6 +33,7 @@ class Concede(Action):
         pass
 
     def execute(self, game):
+        print('Player %d concedes' % (game.turn % 2) + 1)
         game.logger.info('WINNER: %s' % 'P2' if game.player == game.player1 else 'P1')
         if game.player == game.player1:
             game.winner = 2
@@ -65,6 +67,7 @@ class Summon(Action):
     def execute(self, game):
         game.logger.info('SUMMON %d' % self.index)
         card = game.player.hand[self.index]
+        print('Player %d summons %s' % ((game.turn % 2) + 1, card.name))
         game.player.current_crystals -= card.cost(game)
         del game.player.hand[self.index]
         minion = spawn(game, game.player, card, self.position)
@@ -114,6 +117,7 @@ class Attack(Action):
         trigger_effects(game, ['attack', self.ally_id, self.enemy_id])
         ally_minion = game.minion_pool[self.ally_id]
         enemy_minion = game.minion_pool[self.enemy_id]
+        print('Player %d attacks %s with %s' % ((game.turn % 2) + 1, ally_minion.name, enemy_minion.name))
 
         if ally_minion == ally_minion.owner.board[0] and game.player.weapon:
             game.player.weapon.durability -= 1
@@ -153,26 +157,29 @@ class Cast(Action):
         index = int(params[1])
         if not (0 <= index < len(game.player.hand)):
             raise Exception('Must CAST a valid index from your hand')
-        if not isinstance(game.player.hand[index], SpellCard):
+        card = game.player.hand[index]
+        if not isinstance(card, SpellCard):
             raise Exception('Must CAST a Spell type card')
-        if game.player.hand[index].cost(game) > game.player.current_crystals:
+        if card.cost(game) > game.player.current_crystals:
             raise Exception('Insufficient funds')
         self.index = index
-        self.spell_card = game.player.hand[self.index]
-        spell_card_name = self.spell_card.name.replace(' ', '')
+        self.spell_card = card
+        spell_card_name = card.name.replace(' ', '')
         self.spell = spell_effects.__dict__.get(spell_card_name)
-        
+
     def execute(self, game, params=None):
+        print('Player %d casts %s' % ((game.turn % 2) + 1, self.spell_card.name))
         trigger_effects(game, ['cast_spell', self.spell_card])
         game.logger.info('CAST %d' % self.index)
         game.player.current_crystals -= self.spell_card.cost(game)
         del game.player.hand[self.index]
+        # the following uses function-style or class-style spells,
+        # eventually the function-style should be removed
         try:
             spell = spell_effects.__dict__[name_to_func(self.spell_card.name)]
             spell(game) # game. G - A - M - E. game.
         except KeyError:
             self.spell(game).execute(params)
-            print('hey you used a spell in the new way')
 
 
 class HeroPower(Action):
@@ -180,6 +187,7 @@ class HeroPower(Action):
         pass
 
     def execute(self, game):
+        print('Player %d uses hero power' % ((game.turn % 2) + 1))
         hero_power(game) # TODO: inline this
 
 

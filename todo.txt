@@ -10,6 +10,7 @@
 --------
 
 EASY:
+- add ability to step through a replay
 - turn trigger params into dict
 - better logging
 - add beast/murloc

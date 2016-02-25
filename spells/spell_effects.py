@@ -1,8 +1,8 @@
-# NB: keep in alphabetical order
+# NB: keep spells in alphabetical order
 
 spell_effects = {} # hack to avoid circular imports
 import actions
-# can't import * from here cause locals() is used below, and it needs to
+# can't import * from here because locals() is used below, and it needs to
 # be kept clean
 import card_data
 import events
@@ -11,10 +11,6 @@ import utils
 from spell_utils import *
 from mage_spells import *
 from warrior_spells import *
-
-
-#def the_coin(game):
-#    game.player.current_crystals = min(game.player.current_crystals + 1, 10)
 
 class TheCoin(SimpleSpell):
     id = 'GAME_005'

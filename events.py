@@ -30,6 +30,8 @@ def draw(game, player):
         print('hand is full! %s is burned' % player.deck[0].name)
         del player.deck[0]
     else:
+        print('Player %d draws %s' % (1 if player == game.player1 else 2,
+                                      player.deck[0].name))
         player.hand.append(player.deck[0])
         del player.deck[0]
 
