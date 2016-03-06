@@ -164,25 +164,17 @@ class Cast(Action):
             raise Exception('Insufficient funds')
         self.index = index
         self.spell_card = card
-        spell_card_name = card.name.replace(' ', '')
-        self.spell = spell_effects.__dict__.get(spell_card_name)
+        self.spell_class = spell_effects.__dict__.get(card.name.replace(' ', ''))
 
     def execute(self, game, agent):
         trigger_effects(game, ['cast_spell', self.spell_card])
         game.logger.info('CAST %d' % self.index)
         game.player.current_crystals -= self.spell_card.cost(game)
         del game.player.hand[self.index]
-        # the following uses function-style or class-style spells,
-        # eventually the function-style should be removed
-        try:
-            spell = spell_effects.__dict__[name_to_func(self.spell_card.name)]
-            print('Player %d casts %s' % ((game.turn % 2) + 1, self.spell_card.name))
-            spell(game) # game. G - A - M - E. game.
-        except KeyError:
-            spell = self.spell(game)
-            params = agent.get_params(game, spell)
-            print('Player %d casts %s with params %s' % ((game.turn % 2) + 1, self.spell_card.name, params))
-            spell.execute(**params)
+        spell = self.spell_class(game)
+        params = agent.get_params(game, spell)
+        print('Player %d casts %s with params %s' % ((game.turn % 2) + 1, self.spell_card.name, params))
+        spell.execute(**params)
 
 
 class HeroPower(Action):
