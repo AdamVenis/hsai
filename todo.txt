@@ -11,11 +11,10 @@
 
 EASY:
 - add ability to step through a replay
+- move events.target into human_agent (remove usage from actions.hero_power and utils.get_aux)
 - turn trigger params into dict
-- better logging
 - add beast/murloc
 - make spellpower work in conjunction with auras (velen), in particular arcane missiles
-- add the ability to specify the position of spawned minions
 
 MEDIUM:
 - fix card information (add recall abilities e.g. sap)

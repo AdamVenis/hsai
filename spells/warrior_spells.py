@@ -5,11 +5,10 @@ import utils
 
 from spell_utils import *
 
-class Charge(SimpleSpell):
+class Charge(TargetAllyMinionSpell):
     def execute(self, **params):
         game = self.game
-        target_id = events.target(game, [minion.minion_id for minion in game.player.board[1:]])
-        minion = game.minion_pool[target_id]
+        minion = game.minion_pool[params['target_id']]
         minion.current_attack += 2
         minion.mechanics.append('Charge')
 

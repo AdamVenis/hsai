@@ -28,18 +28,14 @@ def mulligan(game, player):
     return mulligans
 
 
-def new_game():
+def new_game(agent1=HumanAgent(), agent2=HumanAgent()):
 
     print(choice(['Take a seat by the hearth!', 'Welcome back!',
                   'Busy night! But there\'s always room for another!']))
-    heroes = [None, None]
-    for i in [0,1]:
-        heroes[i] = raw_input('Choose your class (Player %s): ' % (i + 1))
-        while heroes[i].lower() not in ['warrior', 'hunter', 'mage', 'warlock', 'shaman', 'rogue', 'priest', 'paladin', 'druid']:
-            heroes[i] = raw_input('Not a valid hero! Choose again. ')
 
-    print('%s versus %s!' % tuple(heroes))
-    game = Game(heroes[0], heroes[1], decks.default_mage, decks.default_mage)   
+    game = Game(agent1.pick_hero(), agent2.pick_hero(), decks.default_mage, decks.default_mage)
+    print('%s versus %s!' % (game.player1.hero, game.player2.hero))
+
     shuffle(game.player1.deck)
     shuffle(game.player2.deck)
     p1_mulligans = mulligan(game, game.player1)
@@ -103,16 +99,17 @@ def load(replay_file):
             else:
                 moves.append(action)
 
-        agent = ReplayAgent()
-        for move in moves:
+        agent = ReplayAgent(replay_file)
+
+        while agent.move_list:
             game.resolve()
-            parsed_action = parse_action(game, move)
-            if isinstance(parsed_action, Concede):
+            action = agent.move(game)
+            if isinstance(action, Concede):
                 return game
-            elif isinstance(parsed_action, Cast):
-                parsed_action.execute(game, agent)
+            elif isinstance(action, Cast):
+                action.execute(game, agent)
             else:
-                parsed_action.execute(game)
+                action.execute(game)
 
         return play_out(game, HumanAgent(), HumanAgent())
     print('how could we ever get here?')
