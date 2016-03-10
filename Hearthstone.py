@@ -34,6 +34,7 @@ def new_game(agent1=HumanAgent(), agent2=HumanAgent()):
                   'Busy night! But there\'s always room for another!']))
 
     game = Game(agent1.pick_hero(), agent2.pick_hero(), decks.default_mage, decks.default_mage)
+    game.player1.hero, game.player2.hero = game.player1.hero(game), game.player2.hero(game)
     print('%s versus %s!' % (game.player1.hero, game.player2.hero))
 
     shuffle(game.player1.deck)
@@ -67,13 +68,16 @@ def new_game(agent1=HumanAgent(), agent2=HumanAgent()):
 
 
 def load(replay_file):
+    agent = ReplayAgent(replay_file)
 
     with open(replay_file) as replay:
         lines = replay.readlines()
         pregame = json.loads(lines[0])
 
-        game = Game(pregame['P1']['hero'], pregame['P2']['hero'],
+        game = Game(agent.pick_hero(), agent.pick_hero(),
                     pregame['P1']['deck'], pregame['P2']['deck'])
+        # unfortunate circular dependency
+        game.player1.hero, game.player2.hero = game.player1.hero(game), game.player2.hero(game)
 
         for _ in range(3):
             game.add_event(events.draw, (game.player1,))
@@ -88,7 +92,7 @@ def load(replay_file):
 
         events.start_turn(game)
 
-        moves = []
+        # this whole bit needs to go
         for action in lines[1:]:
             action = action.lower()
             if action.startswith('aux'):
@@ -96,17 +100,11 @@ def load(replay_file):
                 if len(action) != 2:
                     raise Exception("MALFORMED REPLAY")
                 game.aux_vals.append(int(action[1]))
-            else:
-                moves.append(action)
-
-        agent = ReplayAgent(replay_file)
 
         while agent.move_list:
             game.resolve()
             action = agent.move(game)
-            if isinstance(action, Concede):
-                return game
-            elif isinstance(action, Cast):
+            if isinstance(action, Cast) or isinstance(action, HeroPower):
                 action.execute(game, agent)
             else:
                 action.execute(game)
@@ -141,12 +139,12 @@ def play_out(game, agent1, agent2):
                 game.resolve()
                 display(game)
                 action = agent.move(game)
-                if isinstance(action, Cast):
+                if isinstance(action, Cast) or isinstance(action, HeroPower):
                     action.execute(game, agent)
                 else:
                     action.execute(game)
                 break
-            except Exception as e:
+            except Exception as e: #user error - catch this elsewhere?
                 print(e)
 
         if isinstance(action, Concede):

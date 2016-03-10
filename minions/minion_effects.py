@@ -7,6 +7,7 @@ import utils
 
 from druid_minions import *
 from mage_minions import *
+from warrior_minions import *
 # id gets partially applied when effect is created
 
 def acolyte_of_pain(game, trigger, id):

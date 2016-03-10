@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 from utils import *
-from events import deal_damage, draw, heal, spawn, start_turn, target
+import events
 from card_types import MinionCard, SpellCard, WeaponCard
 import minions.minion_effects
 import spells.spell_effects as spell_effects
@@ -25,7 +25,7 @@ class End(Action):
         trigger_effects(game, ['end_turn', game.player])
         game.turn += 1
         game.enemy, game.player = game.player, game.enemy        
-        start_turn(game)
+        events.start_turn(game)
 
 
 class Concede(Action):
@@ -33,7 +33,7 @@ class Concede(Action):
         pass
 
     def execute(self, game):
-        print('Player %d concedes' % (game.turn % 2) + 1)
+        print('Player %d concedes' % ((game.turn % 2) + 1))
         game.logger.info('WINNER: %s' % 'P2' if game.player == game.player1 else 'P1')
         if game.player == game.player1:
             game.winner = 2
@@ -70,7 +70,7 @@ class Summon(Action):
         print('Player %d summons %s' % ((game.turn % 2) + 1, card.name))
         game.player.current_crystals -= card.cost(game)
         del game.player.hand[self.index]
-        minion = spawn(game, game.player, card, self.position)
+        minion = events.spawn(game, game.player, card, self.position)
         trigger_effects(game, ['battlecry', minion.minion_id])
         trigger_effects(game, ['summon', minion.minion_id])
 
@@ -134,7 +134,7 @@ class Attack(Action):
         else:
             damage = ally_minion.attack
             if damage > 0:
-                game.add_event(deal_damage, (self.enemy_id, damage))
+                game.add_event(events.deal_damage, (self.enemy_id, damage))
 
         if 'Divine Shield' in ally_minion.mechanics:
             ally_minion.mechanics.remove('Divine Shield')
@@ -145,7 +145,7 @@ class Attack(Action):
             if enemy_minion == enemy_minion.owner.board[0] and enemy_minion.owner.weapon is not None:
                 damage -= enemy_minion.owner.weapon.attack
             if damage > 0:
-                game.add_event(deal_damage, (self.ally_id, damage))
+                game.add_event(events.deal_damage, (self.ally_id, damage))
 
 @lazy
 class Cast(Action):
@@ -172,18 +172,25 @@ class Cast(Action):
         game.player.current_crystals -= self.spell_card.cost(game)
         del game.player.hand[self.index]
         spell = self.spell_class(game)
-        params = agent.get_params(game, spell)
+        params = agent.spell_params(game, spell)
         print('Player %d casts %s with params %s' % ((game.turn % 2) + 1, self.spell_card.name, params))
         spell.execute(**params)
 
 
 class HeroPower(Action):
     def __init__(self, game):
-        pass
+        if game.player.current_crystals < 2:
+            raise Exception('not enough mana!')
+        elif not game.player.can_hp:
+            raise Exception('can only use this once per turn!')            
 
-    def execute(self, game):
-        print('Player %d uses hero power' % ((game.turn % 2) + 1))
-        hero_power(game) # TODO: inline this
+    def execute(self, game, agent):
+        trigger_effects(game, ['hero_power'])
+        game.player.can_hp = False
+        game.player.current_crystals -= 2
+        params = agent.hero_power_params(game)
+        print('Player %d uses hero power with params %s' % ((game.turn % 2) + 1, params))
+        game.player.hero.power(**params)
 
 
 def parse_action(game, input):
@@ -204,50 +211,3 @@ def parse_action(game, input):
     else:
         print('invalid input ', input)
         return Action()
-
-
-def hero_power(game):
-
-    if game.player.current_crystals < 2:
-        print('not enough mana!')
-        return
-    elif not game.player.can_hp:
-        print('can only use this once per turn!')
-        return
-
-    h = game.player.hero.lower()
-    if h == 'hunter':
-        game.add_event(deal_damage, (game.enemy.board[0].minion_id, 2))
-    elif h == 'warrior':
-        game.player.armor += 2
-    elif h == 'shaman':
-        totems = ['Healing Totem', 'Searing Totem',
-                  'Stoneclaw Totem', 'Wrath of Air Totem']
-        for minion in game.player.board:
-            if minion.name in totems:
-                totems.remove(minion.name)
-        if totems:  # not all have been removed
-            game.add_event(spawn, 
-                (game.player, card_data.get_card(game.choice(totems, random=True), game.player)))
-        else:
-            print('all totems have already been summoned!')
-            return
-    elif h == 'mage':
-        target_id = target(game)
-        game.add_event(deal_damage, (target_id, 1))
-    elif h == 'warlock':
-        game.add_event(deal_damage, (game.player.board[0].minion_id, 2))
-        game.add_event(draw, (game.player,))
-    elif h == 'rogue':
-        game.player.weapon = Weapon(game, 1, 2)
-    elif h == 'priest':
-        target_id = target(game)
-        game.add_event(heal, (target_id, 2))
-    elif h == 'paladin':
-        game.add_event(spawn, (game.player, card_data.get_card('Silver Hand Recruit')))
-    elif h == 'druid':
-        game.player.armor += 1
-        game.player.board[0].attack += 1
-        game.effect_pool.append(minion_effects.minion_effects['Druid'])
-    game.player.can_hp = False
-    game.player.current_crystals -= 2
