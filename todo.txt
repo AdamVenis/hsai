@@ -13,6 +13,7 @@ EASY:
 - add ability to step through a replay
 - move events.target into human_agent (remove usage from minion_effects and utils.get_aux)
 - consider moving aux_vals into replay_agent
+- move mulligans to agents
 - turn trigger params into dict
 - add beast/murloc
 - make spellpower work in conjunction with auras (velen), in particular arcane missiles

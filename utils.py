@@ -1,5 +1,5 @@
 from __future__ import print_function
-from random import shuffle, randint, choice
+from random import sample, shuffle, randint, choice
 from collections import deque, namedtuple
 import card_data
 import logging
@@ -293,3 +293,10 @@ def get_logger():
     logger.addHandler(log_file_handler)
     logger.setLevel(logging.INFO)
     return logger
+
+def replace_hand(deck, from_inds, to_inds=None):
+    if to_inds is None:
+        to_inds = sample(range(4, 30), len(from_inds))
+    for i, j in zip(from_inds, to_inds):
+        deck[i], deck[j] = deck[j], deck[i]
+    return to_inds

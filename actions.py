@@ -86,14 +86,13 @@ class Attack(Action):
                 raise Exception('ATTACK requires exactly two additional arguments')
             source_index = int(params[1])
             target_index = int(params[2])
-            if not (0 <= source_index < len(game.player.board)):
-                raise Exception('Invalid source index')
-            if not (0 <= target_index < len(game.enemy.board)):
-                raise Exception('Invalid target index')
-            # TODO(adamvenis): make sure you can't attack stealth,
-            # or nontaunt when taunt exists
-            ally_minion = game.player.board[source_index]
-            enemy_minion = game.enemy.board[target_index]
+
+            if source_index >= 1000: # for when supplied ids instead of hand indices
+                ally_minion = game.minion_pool[source_index]
+                enemy_minion = game.minion_pool[target_index]
+            else:
+                ally_minion = game.player.board[source_index]
+                enemy_minion = game.enemy.board[target_index]
             
             if ally_minion.attacks_left <= 0:
                 raise Exception('This minion cannot attack')
@@ -185,6 +184,7 @@ class HeroPower(Action):
             raise Exception('can only use this once per turn!')            
 
     def execute(self, game, agent):
+        game.logger.info('HERO POWER')
         trigger_effects(game, ['hero_power'])
         game.player.can_hp = False
         game.player.current_crystals -= 2

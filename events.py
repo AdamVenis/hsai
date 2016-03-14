@@ -89,7 +89,7 @@ def spawn(game, player, card, position=None):
         position = len(player.board) - 1
 
     minion = Minion(game, card)
-    print('Player %d spawns %s' % ((game.turn % 2) + 1, minion))
+    print('Player %d spawns %s' % (1 if player == game.player1 else 2, minion))
     player.board.insert(position + 1, minion) # never displace the hero
     if 'Charge' in minion.mechanics:
         if 'Windfury' in minion.mechanics:

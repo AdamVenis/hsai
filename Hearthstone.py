@@ -12,20 +12,8 @@ from human_agent import HumanAgent
 from replay_agent import ReplayAgent
 
 import json
-from random import shuffle
+from random import sample, shuffle
 
-def mulligan(game, player):
-
-    hand_size = 3 if player == game.player else 4
-    shown_cards = player.deck[:hand_size]
-    print('Your cards are %s' % shown_cards)
-    mulligans = raw_input('Indicate which cards you want shuffled back by typing space delimited indices.\n')
-    while not all(0 <= int(index) < len(shown_cards) for index in mulligans.split()):
-        mulligans = raw_input('Invalid input! Try again.')
-    # TODO(adamvenis): bad logic, user could know where in the deck the shuffled cards went
-    for i in map(int, mulligans.split()):
-        player.deck[i], player.deck[-i] = player.deck[-i], player.deck[i]
-    return mulligans
 
 
 def new_game(agent1=HumanAgent(), agent2=HumanAgent()):
@@ -39,8 +27,21 @@ def new_game(agent1=HumanAgent(), agent2=HumanAgent()):
 
     shuffle(game.player1.deck)
     shuffle(game.player2.deck)
-    p1_mulligans = mulligan(game, game.player1)
-    p2_mulligans = mulligan(game, game.player2)        
+    p1_mulligans = agent1.mulligan(game, game.player1)
+    p1_replacements = replace_hand(game.player1.deck, p1_mulligans)
+    p2_mulligans = agent2.mulligan(game, game.player2)
+    p2_replacements = replace_hand(game.player2.deck, p2_mulligans)
+ 
+    pregame_logs = {}
+    pregame_logs['P1'] = {'hero': game.player1.hero,
+                          'deck': [minion.name for minion in game.player1.deck], 
+                          'mulligans': p1_mulligans,
+                          'replacements': p1_replacements}
+    pregame_logs['P2'] = {'hero': game.player2.hero,
+                          'deck': [minion.name for minion in game.player2.deck],
+                          'mulligans': p2_mulligans,
+                          'replacements': p2_replacements}
+    game.logger.info(json.dumps(pregame_logs))
     
     for _ in range(3):
         game.add_event(events.draw, (game.player1,))
@@ -48,14 +49,6 @@ def new_game(agent1=HumanAgent(), agent2=HumanAgent()):
         game.add_event(events.draw, (game.player2,))
     game.player2.hand.append(card_data.get_card('The Coin', game.player2))
 
-    pregame_logs = {}
-    pregame_logs['P1'] = {'hero': game.player1.hero,
-                          'deck': [minion.name for minion in game.player1.deck], 
-                          'kept': p1_mulligans}
-    pregame_logs['P2'] = {'hero': game.player2.hero,
-                          'deck': [minion.name for minion in game.player2.deck],
-                          'kept': p2_mulligans}
-    game.logger.info(json.dumps(pregame_logs))  
     
     for player in [game.player1, game.player2]:
         events.spawn(game, player,
@@ -78,6 +71,8 @@ def load(replay_file):
                     pregame['P1']['deck'], pregame['P2']['deck'])
         # unfortunate circular dependency
         game.player1.hero, game.player2.hero = game.player1.hero(game), game.player2.hero(game)
+
+        game.logger.info(lines[0])
 
         for _ in range(3):
             game.add_event(events.draw, (game.player1,))
