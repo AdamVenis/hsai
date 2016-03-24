@@ -18,6 +18,7 @@ class HumanAgent():
         return globals()[hero.capitalize()]
 
     def mulligan(self, game, player):
+        # returns a list of ints
 
         hand_size = 3 if player == game.player else 4
         shown_cards = player.deck[:hand_size]
@@ -26,10 +27,6 @@ class HumanAgent():
         while not all(0 <= int(index) < len(shown_cards) for index in mulligans.split()):
             mulligans = raw_input('Invalid input! Try again.')
         return map(int, mulligans.split())
-        '''# TODO(adamvenis): bad logic, user could know where in the deck the shuffled cards went
-        for i in map(int, mulligans.split()):
-            player.deck[i], player.deck[-i] = player.deck[-i], player.deck[i]
-        return mulligans'''
 
     def move(self, game):
 
@@ -52,17 +49,15 @@ class HumanAgent():
             return None
         elif isinstance(spell, spells.TargetAllyMinionSpell):
             return {'target_id': events.target(game,
-                        valid_targets=[minion.minion_id for minion in game.player.board[1:]])}
+                        valid_targets=[minion.minion_id for minion in game.ALLY_MINIONS])}
         elif isinstance(spell, spells.TargetCharacterSpell):
             return {'target_id': events.target(game,
-                        valid_targets=[minion.minion_id for minion in game.player.board] + 
-                                      [minion.minion_id for minion in game.enemy.board])}
+                        valid_targets=[minion.minion_id for minion in game.ALL_CHARACTERS])}
         elif isinstance(spell, spells.TargetEnemyMinionSpell):
             return {'target_id': events.target(game,
-                        valid_targets=[minion.minion_id for minion in game.enemy.board[1:]])}
+                        valid_targets=[minion.minion_id for minion in game.ENEMY_MINIONS])}
         elif isinstance(spell, spells.TargetMinionSpell):
             return {'target_id': events.target(game,
-                        valid_targets=[minion.minion_id for minion in game.player.board[1:]] + 
-                                      [minion.minion_id for minion in game.enemy.board[1:]])}
+                        valid_targets=[minion.minion_id for minion in game.ALL_MINIONS])}
         else:
             return None

@@ -35,13 +35,10 @@ class ReplayAgent():
     def hero_power_params(self, game):
         print('hi', game.player.hero, game.aux_vals, self.aux_vals)
         if isinstance(game.player.hero, SimpleHero):
-            print('ONE')
             return None
         elif isinstance(game.player.hero, TargetCharacterHero):
-            print('TONE')
             return {'target_id': game.aux_vals.popleft()}
         else:
-            print('THONE')
             return None
 
     def spell_params(self, game, spell):

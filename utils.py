@@ -289,8 +289,8 @@ def lazy(original_class):
 def get_logger():
     logger = logging.getLogger()
     time = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
-    log_file_handler = logging.FileHandler('replays/%s.hsrep' % time)
-    logger.addHandler(log_file_handler)
+    #log_file_handler = logging.FileHandler('replays/%s.hsrep' % time)
+    #logger.addHandler(log_file_handler)
     logger.setLevel(logging.INFO)
     return logger
 

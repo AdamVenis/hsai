@@ -114,7 +114,7 @@ def play_out(game, agent1, agent2):
         player = game.player
         agent = agent1 if player == game.player1 else agent2
 
-        # TODO(adamvenis): turn this into a triggered effect?
+        # TODO(adamvenis): turn this into a triggered effect
         p1_dead = (len(game.player1.board) == 0 or
                    game.player1.board[0].name != 'Hero')
         p2_dead = (len(game.player2.board) == 0 or
@@ -139,7 +139,7 @@ def play_out(game, agent1, agent2):
                 else:
                     action.execute(game)
                 break
-            except Exception as e: #user error - catch this elsewhere?
+            except Exception as e: # user error - for debugging only?
                 print(e)
 
         if isinstance(action, Concede):

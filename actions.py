@@ -34,7 +34,7 @@ class Concede(Action):
 
     def execute(self, game):
         print('Player %d concedes' % ((game.turn % 2) + 1))
-        game.logger.info('WINNER: %s' % 'P2' if game.player == game.player1 else 'P1')
+        game.logger.info('WINNER: %s' % ('P2' if game.player == game.player1 else 'P1'))
         if game.player == game.player1:
             game.winner = 2
         else:
@@ -167,12 +167,12 @@ class Cast(Action):
 
     def execute(self, game, agent):
         trigger_effects(game, ['cast_spell', self.spell_card])
-        game.logger.info('CAST %d' % self.index)
         game.player.current_crystals -= self.spell_card.cost(game)
         del game.player.hand[self.index]
         spell = self.spell_class(game)
         params = agent.spell_params(game, spell)
         print('Player %d casts %s with params %s' % ((game.turn % 2) + 1, self.spell_card.name, params))
+        game.logger.info('CAST %d' % self.index) # TODO: add params here
         spell.execute(**params)
 
 
