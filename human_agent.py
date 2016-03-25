@@ -47,17 +47,12 @@ class HumanAgent():
 
         if isinstance(spell, spells.SimpleSpell):
             return None
-        elif isinstance(spell, spells.TargetAllyMinionSpell):
-            return {'target_id': events.target(game,
-                        valid_targets=[minion.minion_id for minion in game.ALLY_MINIONS])}
-        elif isinstance(spell, spells.TargetCharacterSpell):
-            return {'target_id': events.target(game,
-                        valid_targets=[minion.minion_id for minion in game.ALL_CHARACTERS])}
-        elif isinstance(spell, spells.TargetEnemyMinionSpell):
-            return {'target_id': events.target(game,
-                        valid_targets=[minion.minion_id for minion in game.ENEMY_MINIONS])}
-        elif isinstance(spell, spells.TargetMinionSpell):
-            return {'target_id': events.target(game,
-                        valid_targets=[minion.minion_id for minion in game.ALL_MINIONS])}
+        elif isinstance(spell, spells.Spell):
+            while True:
+                params = {'target_id': events.target(game)}
+                if params in spell.legal_params(): # TODO: make this function cache its output
+                    return params
+                else:
+                    print('Invalid parameters. Try again.')
         else:
             return None
