@@ -9,7 +9,7 @@ import card_data
 
 import inspect
 
-class Action():
+class Action(): # lawsuit!
     def execute(self, game):
         raise NotImplementedError
 

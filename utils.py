@@ -7,7 +7,7 @@ from time import strftime, gmtime
 
 
 class Game():
-    def __init__(self, hero1, hero2, deck1, deck2):
+    def __init__(self, hero1, hero2, deck1, deck2, save_replay=True):
         # weirdly cyclic dependency with player, game and deck
         self.player1 = Player(hero=hero1, deck=None)
         self.player2 = Player(hero=hero2, deck=None)
@@ -22,7 +22,7 @@ class Game():
         self.action_queue = deque()
         self.minion_pool = {}
         self.minion_counter = 1000  # dummy value
-        self.logger = get_logger()
+        self.logger = get_logger(save_replay)
         self.aux_vals = deque()
         self.winner = 0 # 0 for no winner yet, 1 for P1 has won, 2 for P2, 3 for tie
         
@@ -286,11 +286,12 @@ def lazy(original_class):
     return original_class
 
 
-def get_logger():
+def get_logger(save_replay):
     logger = logging.getLogger()
     time = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
-    #log_file_handler = logging.FileHandler('replays/%s.hsrep' % time)
-    #logger.addHandler(log_file_handler)
+    if save_replay:
+        log_file_handler = logging.FileHandler('replays/%s.hsrep' % time)
+        logger.addHandler(log_file_handler)
     logger.setLevel(logging.INFO)
     return logger
 

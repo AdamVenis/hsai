@@ -5,7 +5,7 @@ class Hero():
     def __init__(self, game):
         self.game = game
 
-    def moves(self):
+    def legal_params(self):
         raise NotImplementedError
 
     def power(self):
@@ -15,8 +15,8 @@ class SimpleHero(Hero):
     pass
 
 class TargetCharacterHero(Hero):
-    def moves(self):
-        return self.game.ALL_CHARACTERS
+    def legal_params(self):
+        return [{'target_id': m.minion_id} for m in self.game.ALL_CHARACTERS]
 
 class Hunter(SimpleHero):
     def power(self, **params):

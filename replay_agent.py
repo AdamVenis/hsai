@@ -29,7 +29,6 @@ class ReplayAgent():
         return globals()[self.heroes.pop().capitalize()]
 
     def move(self, game):
-        next
         return parse_action(game, self.move_list.pop())
 
     def hero_power_params(self, game):

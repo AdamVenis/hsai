@@ -13,7 +13,7 @@ class HumanAgent():
 
         hero = raw_input('Choose your class: ')
         while hero.lower() not in ['warrior', 'hunter', 'mage', 'warlock',
-                                        'shaman', 'rogue', 'priest', 'paladin', 'druid']:
+                                   'shaman', 'rogue', 'priest', 'paladin', 'druid']:
             hero = raw_input('Not a valid hero! Choose again. ')
         return globals()[hero.capitalize()]
 
@@ -37,9 +37,14 @@ class HumanAgent():
         if isinstance(game.player.hero, SimpleHero):
             return None
         elif isinstance(game.player.hero, TargetCharacterHero):
-            return {'target_id': events.target(game,
-                        valid_targets=[minion.minion_id for minion in game.player.board] + 
-                                      [minion.minion_id for minion in game.enemy.board])}
+            legal_params = game.player.hero.legal_params()
+            while True:
+                # TODO: move events.target into human_agent
+                params = {'target_id': events.target(game)}
+                if params in legal_params:
+                    return params
+                else:
+                    print('Invalid hero power parameters. Try again.')
         else:
             return None
 
@@ -48,11 +53,12 @@ class HumanAgent():
         if isinstance(spell, spells.SimpleSpell):
             return None
         elif isinstance(spell, spells.Spell):
+            legal_params = spell.legal_params()
             while True:
                 params = {'target_id': events.target(game)}
-                if params in spell.legal_params(): # TODO: make this function cache its output
+                if params in legal_params:
                     return params
                 else:
-                    print('Invalid parameters. Try again.')
+                    print('Invalid spell parameters. Try again.')
         else:
             return None

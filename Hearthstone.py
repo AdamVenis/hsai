@@ -60,7 +60,7 @@ def new_game(agent1=HumanAgent(), agent2=HumanAgent()):
     return play_out(game, HumanAgent(), HumanAgent())
 
 
-def load(replay_file):
+def load(replay_file, save_replay=True):
     agent = ReplayAgent(replay_file)
 
     with open(replay_file) as replay:
@@ -68,7 +68,7 @@ def load(replay_file):
         pregame = json.loads(lines[0])
 
         game = Game(agent.pick_hero(), agent.pick_hero(),
-                    pregame['P1']['deck'], pregame['P2']['deck'])
+                    pregame['P1']['deck'], pregame['P2']['deck'], save_replay)
         # unfortunate circular dependency
         game.player1.hero, game.player2.hero = game.player1.hero(game), game.player2.hero(game)
 
