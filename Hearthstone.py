@@ -135,6 +135,11 @@ def play_out(game, agent1, agent2):
                 display(game)
                 action = agent.move(game)
                 if isinstance(action, Cast) or isinstance(action, HeroPower):
+                    # TODO: give agents a game reference pls
+                    # TODO: ideally the following line would look like this:
+                    # action.execute(game, agent.action_params(game, action))
+                    # but it can't be because the agent can't access the spell
+                    # from a CAST object until lazy __init__ is called
                     action.execute(game, agent)
                 else:
                     action.execute(game)

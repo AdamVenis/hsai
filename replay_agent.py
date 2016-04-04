@@ -1,4 +1,4 @@
-from actions import parse_action
+from actions import *
 from heroes import *
 import events
 import spells.spell_effects as spells

@@ -29,3 +29,6 @@ class TargetEnemyMinionSpell(Spell):
 class TargetMinionSpell(Spell):
     def legal_params(self):
         return [{'target_id': m.minion_id} for m in self.game.ALL_MINIONS]
+
+class RandomSpell(Spell):
+    pass

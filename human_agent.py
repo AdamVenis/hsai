@@ -3,6 +3,8 @@ from heroes import *
 import events
 import spells.spell_effects as spells
 
+from random import choice
+
 class HumanAgent():
 
     def __init__(self):
@@ -52,6 +54,10 @@ class HumanAgent():
 
         if isinstance(spell, spells.SimpleSpell):
             return None
+        elif isinstance(spell, spells.RandomSpell):
+            # TODO: this shouldn't need to be specified here
+            # i.e. don't give agents explicit control of randomness
+            return choice(spell.legal_params())
         elif isinstance(spell, spells.Spell):
             legal_params = spell.legal_params()
             while True:

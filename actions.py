@@ -43,11 +43,11 @@ class Concede(Action):
 @lazy
 class Summon(Action):
     def __init__(self, game, action_string):
-        params = action_string.split()
-        if len(params) not in [2, 3]:
+        tokens = action_string.split()
+        if len(tokens) not in [2, 3]:
             raise Exception(
                 'SUMMON requires exactly one or two additional arguments')
-        index = int(params[1])
+        index = int(tokens[1])
         if index not in range(len(game.player.hand)):
             raise Exception('Must SUMMON a valid index from your hand')
         if not isinstance(game.player.hand[index], MinionCard):
@@ -56,8 +56,8 @@ class Summon(Action):
             raise Exception('Insufficient funds')
         self.index = index
 
-        if len(params) == 3:
-            position = int(params[2])
+        if len(tokens) == 3:
+            position = int(tokens[2])
             if position not in range(len(game.player.board)):
                 raise Exception('Must provide a valid position to be summoned')
             self.position = position
@@ -81,11 +81,11 @@ class Attack(Action):
     # necessary if deal_damage gets a source
     def __init__(self, game, action_string='', source_id=None, target_id=None):
         if action_string:
-            params = action_string.split()
-            if len(params) != 3:
+            tokens = action_string.split()
+            if len(tokens) != 3:
                 raise Exception('ATTACK requires exactly two additional arguments')
-            source_index = int(params[1])
-            target_index = int(params[2])
+            source_index = int(tokens[1])
+            target_index = int(tokens[2])
 
             if source_index >= 1000: # for when supplied ids instead of hand indices
                 ally_minion = game.minion_pool[source_index]
@@ -150,10 +150,10 @@ class Attack(Action):
 class Cast(Action):
 
     def __init__(self, game, action_string):
-        params = action_string.split()
-        if len(params) != 2:
+        tokens = action_string.split()
+        if len(tokens) != 2:
             raise Exception('CAST requires exactly one additional argument')
-        index = int(params[1])
+        index = int(tokens[1])
         if not (0 <= index < len(game.player.hand)):
             raise Exception('Must CAST a valid index from your hand')
         card = game.player.hand[index]
@@ -163,17 +163,18 @@ class Cast(Action):
             raise Exception('Insufficient funds')
         self.index = index
         self.spell_card = card
-        self.spell_class = spell_effects.__dict__.get(card.name.replace(' ', ''))
+        self.spell = spell_effects.__dict__.get(card.name.replace(' ', ''))(game)
 
-    def execute(self, game, agent):
+    def execute(self, game, agent=None, params=None):
+        # one of agent or params must be provided
         trigger_effects(game, ['cast_spell', self.spell_card])
         game.player.current_crystals -= self.spell_card.cost(game)
         del game.player.hand[self.index]
-        spell = self.spell_class(game)
-        params = agent.spell_params(game, spell)
+        if params is None:
+            params = agent.spell_params(game, self.spell)
         print('Player %d casts %s with params %s' % ((game.turn % 2) + 1, self.spell_card.name, params))
         game.logger.info('CAST %d' % self.index) # TODO: add params here
-        spell.execute(**params)
+        self.spell.execute(**params)
 
 
 class HeroPower(Action):
@@ -183,7 +184,8 @@ class HeroPower(Action):
         elif not game.player.can_hp:
             raise Exception('can only use this once per turn!')            
 
-    def execute(self, game, agent):
+    def execute(self, game, agent=None, params=None):
+        # one of agent or params must be provided
         game.logger.info('HERO POWER')
         trigger_effects(game, ['hero_power'])
         game.player.can_hp = False
