@@ -40,29 +40,10 @@ class Concede(Action):
         else:
             game.winner = 1
 
-@lazy
 class Summon(Action):
-    def __init__(self, game, action_string):
-        tokens = action_string.split()
-        if len(tokens) not in [2, 3]:
-            raise Exception(
-                'SUMMON requires exactly one or two additional arguments')
-        index = int(tokens[1])
-        if index not in range(len(game.player.hand)):
-            raise Exception('Must SUMMON a valid index from your hand')
-        if not isinstance(game.player.hand[index], MinionCard):
-            raise Exception('Must SUMMON a Minion type card')
-        if game.player.hand[index].cost(game) > game.player.current_crystals:
-            raise Exception('Insufficient funds')
+    def __init__(self, game, index, position=None):
         self.index = index
-
-        if len(tokens) == 3:
-            position = int(tokens[2])
-            if position not in range(len(game.player.board)):
-                raise Exception('Must provide a valid position to be summoned')
-            self.position = position
-        else:
-            self.position = len(game.player.board) - 1
+        self.position = position or len(game.player.board) - 1
         
     def execute(self, game):
         game.logger.info('SUMMON %d' % self.index)
@@ -74,42 +55,18 @@ class Summon(Action):
         trigger_effects(game, ['battlecry', minion.minion_id])
         trigger_effects(game, ['summon', minion.minion_id])
 
-@lazy
 class Attack(Action):
     # either action_string is supplied, or source_id and target_id are supplied
     # for things like rogue 'attack the minion next to you'. maybe not
     # necessary if deal_damage gets a source
-    def __init__(self, game, action_string='', source_id=None, target_id=None):
-        if action_string:
-            tokens = action_string.split()
-            if len(tokens) != 3:
-                raise Exception('ATTACK requires exactly two additional arguments')
-            source_index = int(tokens[1])
-            target_index = int(tokens[2])
-
-            if source_index >= 1000: # for when supplied ids instead of hand indices
-                ally_minion = game.minion_pool[source_index]
-                enemy_minion = game.minion_pool[target_index]
-            else:
-                ally_minion = game.player.board[source_index]
-                enemy_minion = game.enemy.board[target_index]
-            
-            if ally_minion.attacks_left <= 0:
-                raise Exception('This minion cannot attack')
-            if ally_minion.attack <= 0:
-                raise Exception('This minion has no attack')
-            if 'Frozen' in ally_minion.mechanics or 'Thawing' in ally_minion.mechanics:
-                raise Exception('This minion is frozen, and cannot attack')
-            if 'Stealth' in enemy_minion.mechanics:
-                raise Exception('Cannot attack a minion with stealth')
-            if 'Taunt' not in enemy_minion.mechanics and any('Taunt' in minion.mechanics for minion in game.enemy.board[1:]):
-                raise Exception('Must target a minion with taunt')
-
-            self.ally_id = ally_minion.minion_id
-            self.enemy_id = enemy_minion.minion_id
+    def __init__(self, game, source, target):
+        if source >= 1000: # for when supplied source is an id instead of a hand index
+            # TODO: only allow ids, fix golden replay for this
+            self.ally_id = source
+            self.enemy_id = target
         else:
-            self.ally_id = source_id
-            self.enemy_id = target_id
+            self.ally_id = game.player.board[source].minion_id
+            self.enemy_id = game.enemy.board[target].minion_id
         
     def execute(self, game):
         game.logger.info('ATTACK %d %d' % (self.ally_id, self.enemy_id))
@@ -146,24 +103,12 @@ class Attack(Action):
             if damage > 0:
                 game.add_event(events.deal_damage, (self.ally_id, damage))
 
-@lazy
 class Cast(Action):
 
-    def __init__(self, game, action_string):
-        tokens = action_string.split()
-        if len(tokens) != 2:
-            raise Exception('CAST requires exactly one additional argument')
-        index = int(tokens[1])
-        if not (0 <= index < len(game.player.hand)):
-            raise Exception('Must CAST a valid index from your hand')
-        card = game.player.hand[index]
-        if not isinstance(card, SpellCard):
-            raise Exception('Must CAST a Spell type card')
-        if card.cost(game) > game.player.current_crystals:
-            raise Exception('Insufficient funds')
+    def __init__(self, game, index):
         self.index = index
-        self.spell_card = card
-        self.spell = spell_effects.__dict__.get(card.name.replace(' ', ''))(game)
+        self.spell_card = game.player.hand[index]
+        self.spell = spell_effects.__dict__.get(self.spell_card.name.replace(' ', ''))(game)
 
     def execute(self, game, agent=None, params=None):
         # one of agent or params must be provided
@@ -178,11 +123,8 @@ class Cast(Action):
 
 
 class HeroPower(Action):
-    def __init__(self, game):
-        if game.player.current_crystals < 2:
-            raise Exception('not enough mana!')
-        elif not game.player.can_hp:
-            raise Exception('can only use this once per turn!')            
+    def __init__(self):
+        pass
 
     def execute(self, game, agent=None, params=None):
         # one of agent or params must be provided

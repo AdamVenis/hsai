@@ -29,10 +29,25 @@ class ReplayAgent():
         return globals()[self.heroes.pop().capitalize()]
 
     def move(self, game):
-        return parse_action(game, self.move_list.pop())
+
+        input = self.move_list.pop().lower()
+        if input.startswith('summon'):
+            return Summon(game, *map(int, input.split()[1:]))
+        elif input.startswith('attack'):
+            return Attack(game, *map(int, input.split()[1:]))
+        elif input.startswith('cast'):
+            return Cast(game, *map(int, input.split()[1:]))
+        elif input.startswith('hero'):
+            return HeroPower()
+        elif input.startswith('end'):
+            return End()
+        elif input.startswith('concede'):
+            return Concede()
+        else:
+            print('invalid input ', input)
+            return Action()
 
     def hero_power_params(self, game):
-        print('hi', game.player.hero, game.aux_vals, self.aux_vals)
         if isinstance(game.player.hero, SimpleHero):
             return None
         elif isinstance(game.player.hero, TargetCharacterHero):

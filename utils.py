@@ -1,8 +1,10 @@
 from __future__ import print_function
-from random import sample, shuffle, randint, choice
-from collections import deque, namedtuple
+
 import card_data
+
 import logging
+from collections import deque, namedtuple
+from random import sample, shuffle, randint, choice
 from time import strftime, gmtime
 
 
@@ -52,7 +54,6 @@ class Game():
 
     def add_event(self, event, args=()):
         self.action_queue.append((event, (self,) + args))
-        #self.action_queue.append(Event(event=event, args=args))
 
     def resolve(self):
         while self.action_queue:
@@ -174,8 +175,6 @@ class Spell():
 		raise NotImplementedError('Subclasses should implement this!')
 
 
-Event = namedtuple('Event', 'event args')
-
 def apply_auras(game, player, object, stat, value):
     for aura in player.auras:
         value = aura.modifier(game, object, stat, value)
@@ -266,25 +265,6 @@ def trigger_effects(game, trigger):
 
 def opponent(game, player):
     return game.enemy if player == game.player else game.player
-
-def lazy(original_class):
-    orig_init = original_class.__init__
-    orig_execute = original_class.execute
-    
-    def __init__(self, *init_args):
-        self.is_init = False
-        self.init_args = init_args
-
-    def execute(self, *exec_args):
-        if not self.is_init:
-            self.is_init = True
-            orig_init(self, *self.init_args)
-        orig_execute(self, *exec_args)
-    
-    original_class.__init__ = __init__
-    original_class.execute = execute
-    return original_class
-
 
 def get_logger(save_replay):
     logger = logging.getLogger()

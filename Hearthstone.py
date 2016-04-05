@@ -33,11 +33,11 @@ def new_game(agent1=HumanAgent(), agent2=HumanAgent()):
     p2_replacements = replace_hand(game.player2.deck, p2_mulligans)
  
     pregame_logs = {}
-    pregame_logs['P1'] = {'hero': game.player1.hero,
+    pregame_logs['P1'] = {'hero': game.player1.hero.__class__.__name__,
                           'deck': [minion.name for minion in game.player1.deck], 
                           'mulligans': p1_mulligans,
                           'replacements': p1_replacements}
-    pregame_logs['P2'] = {'hero': game.player2.hero,
+    pregame_logs['P2'] = {'hero': game.player2.hero.__class__.__name__,
                           'deck': [minion.name for minion in game.player2.deck],
                           'mulligans': p2_mulligans,
                           'replacements': p2_replacements}
