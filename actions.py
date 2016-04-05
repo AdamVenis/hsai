@@ -2,10 +2,7 @@ from __future__ import print_function
 
 from utils import *
 import events
-from card_types import MinionCard, SpellCard, WeaponCard
-import minions.minion_effects
 import spells.spell_effects as spell_effects
-import card_data
 
 import inspect
 

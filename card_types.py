@@ -1,4 +1,4 @@
-import utils
+from utils import *
 
 class Card():
     def __init__(self, name, neutral_cost, owner, card_id):
@@ -9,7 +9,7 @@ class Card():
 
     def cost(self, game):
         rtn = self.neutral_cost
-        rtn = utils.apply_auras(game, self.owner, self, 'play', rtn)
+        rtn = apply_auras(game, self.owner, self, 'play', rtn)
         return rtn
         
     def __repr__(self):

@@ -31,12 +31,13 @@ class ReplayAgent():
     def move(self, game):
 
         input = self.move_list.pop().lower()
+        args = map(int, input.split()[1:])
         if input.startswith('summon'):
-            return Summon(game, *map(int, input.split()[1:]))
+            return Summon(game, *args)
         elif input.startswith('attack'):
-            return Attack(game, *map(int, input.split()[1:]))
+            return Attack(game, *args)
         elif input.startswith('cast'):
-            return Cast(game, *map(int, input.split()[1:]))
+            return Cast(game, *args)
         elif input.startswith('hero'):
             return HeroPower()
         elif input.startswith('end'):

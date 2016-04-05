@@ -1,6 +1,7 @@
 # tested with python version 2.7.3
 
 from utils import *
+from game_objects import *
 import card_data
 import decks
 from actions import *

@@ -5,6 +5,8 @@ import actions
 import events
 import utils
 
+from game_objects import Aura, Minion
+
 from druid_minions import *
 from mage_minions import *
 from warrior_minions import *
@@ -96,7 +98,7 @@ def novice_engineer(game, trigger, id):
 
 def raid_leader(game, trigger, id):
     def modifier(game, object, stat, value):
-        if (isinstance(object, utils.Minion) and
+        if (isinstance(object, Minion) and
                 not utils.is_hero(object) and
                 object != game.minion_pool[id] and
                 object.owner == game.minion_pool[id].owner and
@@ -104,7 +106,7 @@ def raid_leader(game, trigger, id):
             return value + 1
         else:
             return value
-    game.minion_pool[id].owner.auras.add(utils.Aura(id, modifier))
+    game.minion_pool[id].owner.auras.add(Aura(id, modifier))
     return True
 
 

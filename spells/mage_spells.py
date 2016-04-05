@@ -2,7 +2,7 @@
 import actions
 import card_data
 import events
-import utils
+import game_objects
 
 from spell_utils import *
 
@@ -59,5 +59,5 @@ class Polymorph(TargetMinionSpell):
         game = self.game
         events.silence(game, params['target_id'])
         minion = game.minion_pool[params['target_id']]
-        chicken = utils.Minion(game, card_data.get_card('Sheep', game.player))
+        chicken = game_objects.Minion(game, card_data.get_card('Sheep', game.player))
         minion.transform_into(chicken)

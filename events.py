@@ -1,5 +1,7 @@
 from functools import partial
-from utils import Minion, is_int, trigger_effects, display
+
+from game_objects import Minion
+from utils import *
 import minions.minion_effects
 
 def deal_damage(game, minion_id, damage):
